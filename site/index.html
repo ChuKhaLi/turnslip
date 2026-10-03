@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>turnslip: know what Claude just did</title>
+  <meta name="description" content="A Claude Code plugin that prints one line after every turn: what changed on disk, what looks risky, and a one-command undo.">
+  <link rel="canonical" href="https://turnslip.dev/">
+  <meta name="theme-color" content="#F9FAFB" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#17181C" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="/fonts/plex-sans-latin-wght.v530.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/plex-mono-latin-400.v530.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/style.v1.css">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://turnslip.dev/">
+  <meta property="og:title" content="turnslip: know what Claude just did">
+  <meta property="og:description" content="One line after every Claude Code turn: what changed on disk, what looks risky, and a one-command undo.">
+  <meta property="og:image" content="https://turnslip.dev/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "turnslip",
+    "description": "A Claude Code plugin that prints one line after every turn: what changed on disk, what looks risky, and a one-command undo.",
+    "url": "https://turnslip.dev/",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Windows, macOS, Linux",
+    "offers": { "@type": "Offer", "price": "19", "priceCurrency": "USD" },
+    "author": { "@type": "Person", "name": "ChuKhaLi", "url": "https://github.com/ChuKhaLi" }
+  }
+  </script>
+</head>
+<body>
+  <!--email_off-->
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site">
+    <a class="brand" href="/">turnslip</a>
+    <nav aria-label="Site">
+      <a href="/#how">How it works</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/#install">Install</a>
+      <a href="https://github.com/ChuKhaLi/turnslip">GitHub</a>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="hero">
+      <div class="hero-text">
+        <h1 class="display">Know what Claude just did.</h1>
+        <p class="lead">turnslip adds one line after every Claude Code turn: what changed on disk, what looks risky, and a one-command undo.</p>
+        <div class="actions">
+          <a class="btn btn-primary" href="#install">Install free</a>
+          <a class="btn btn-secondary" href="#pricing">See Pro</a>
+        </div>
+      </div>
+      <figure class="demo">
+        <div class="term" role="img" aria-label="A Claude Code session. Claude wrote config.js and index.html and replied that it added a login page. The last line is the turnslip slip: Added a login page, 2 files, key added in config.js, and the undo command."><span class="cc-prompt">&gt; add a login page and wire up the API key</span>
+
+<span class="cc-tool">●</span> <b>Write</b>(config.js)
+<span class="cc-dim">  ⎿</span>  Wrote <b>1</b> line to <b>config.js</b>
+<span class="cc-tool">●</span> <b>Update</b>(index.html)
+<span class="cc-dim">  ⎿</span>  Updated <b>index.html</b> with <b>14</b> additions
+
+<span class="cc-reply">●</span> I added a login form to <span class="cc-file">index.html</span> and put the key in <span class="cc-file">config.js</span>.
+  &lt;receipt&gt;Added a login page | files: config.js, index.html&lt;/receipt&gt;
+<span class="slip">  ⎿  Stop says: turnslip · Added a login page · 2 files · 🔑 key added in config.js · /turnslip:undo</span></div>
+      </figure>
+      <p class="callout" id="how">This line is turnslip. It lists what changed on disk, flags the risky parts, and names the undo.</p>
+    </section>
+
+    <section class="catches" aria-labelledby="catches-title">
+      <h2 id="catches-title">What it catches</h2>
+      <ul>
+        <li><h3>Shell changes</h3><p>Files a command created, changed or deleted count too, not only Claude's edits. <code>npm install</code> shows up as packages changed.</p></li>
+        <li><h3>Risky changes</h3><p>🔑 a key written to a file your .gitignore doesn't exclude, or a new <code>.env</code>, 🗑 deletions, 🗄 migrations, 📦 dependencies, 🚀 pushes and deploys, ⚠ writes outside the project.</p></li>
+        <li><h3>What went unsaid</h3><p>When a file changed but Claude's reply did not mention it, the slip says <code>not mentioned: config.js</code>.</p></li>
+        <li><h3>One-command undo</h3><p><code>/turnslip:undo</code> puts the last turn's files back and keeps any file you changed since.</p></li>
+      </ul>
+    </section>
+
+    <section class="plans" id="pricing" aria-labelledby="pricing-title">
+      <h2 id="pricing-title">Free, and Pro</h2>
+      <div class="plan-grid">
+        <article class="plan">
+          <h3>Free</h3>
+          <p class="price"><span class="figure">$0</span></p>
+          <ul>
+            <li>The slip after every turn</li>
+            <li>Risk flags</li>
+            <li>The check against what Claude said</li>
+            <li><code>/turnslip:undo</code> for the last turn</li>
+          </ul>
+          <a class="btn btn-secondary" href="#install">Install free</a>
+        </article>
+        <article class="plan plan-pro" id="pro">
+          <h3>Pro</h3>
+          <p class="price"><span class="figure">$19</span> one-time at launch, <span class="figure">$29</span> after. No subscription.</p>
+          <ul>
+            <li><code>/turnslip:history</code>: every recorded turn, numbered</li>
+            <li><code>/turnslip:undo 3</code>: undo any recorded turn, not only the last</li>
+            <li><code>/turnslip:report</code>: a report of the session</li>
+            <li>Detailed slips</li>
+          </ul>
+          <button class="btn btn-primary" type="button" disabled>Checkout opens soon</button>
+          <p class="fine">Payment, tax and the receipt are handled by Dodo Payments, the merchant of record.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="install" id="install" aria-labelledby="install-title">
+      <h2 id="install-title">Install</h2>
+      <p>In a terminal:</p>
+      <pre class="cmd"><code>claude plugin marketplace add ChuKhaLi/turnslip</code></pre>
+      <pre class="cmd"><code>claude plugin install turnslip@turnslip</code></pre>
+      <p>Needs Node.js 18 or later. Run <code>/turnslip:setup</code> in Claude Code to check.</p>
+    </section>
+
+    <section class="delivery" aria-labelledby="delivery-title">
+      <h2 id="delivery-title">How Pro is delivered</h2>
+      <ol>
+        <li>Dodo Payments emails your receipt and your license key.</li>
+        <li>In Claude Code, run <code>/turnslip:activate &lt;key&gt;</code>.</li>
+        <li>One key works on up to 3 machines. Free one with <code>/turnslip:deactivate</code>.</li>
+        <li>turnslip checks the key once a week and keeps working for 14 days offline.</li>
+      </ol>
+    </section>
+
+    <section class="faq" id="questions" aria-labelledby="faq-title">
+      <h2 id="faq-title">Questions</h2>
+      <h3>Does anything leave my machine?</h3>
+      <p>No. Snapshots and slips stay in <code>~/.turnslip</code>. Pro sends only the license key and a machine id to Dodo Payments to check the license. <a href="/privacy">Privacy</a></p>
+      <h3>Can I get a refund?</h3>
+      <p>Yes, within 14 days, no questions asked. <a href="/refunds">Refunds</a></p>
+      <h3>Where is the source?</h3>
+      <p>On <a href="https://github.com/ChuKhaLi/turnslip">GitHub</a>, under FSL-1.1-MIT: read it, change it, use it; each version becomes MIT after two years.</p>
+      <h3>Which tools does it work with?</h3>
+      <p>Claude Code, in the terminal and in VS Code.</p>
+    </section>
+  </main>
+
+  <footer class="site">
+    <p>turnslip, by ChuKhaLi. Support: <a href="mailto:support@turnslip.dev">support@turnslip.dev</a></p>
+    <nav aria-label="Legal">
+      <a href="/terms">Terms</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/refunds">Refunds</a>
+      <a href="https://github.com/ChuKhaLi/turnslip">GitHub</a>
+    </nav>
+    <p class="fine">© 2026 ChuKhaLi</p>
+  </footer>
+  <!--/email_off-->
+</body>
+</html>

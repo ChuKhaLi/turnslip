@@ -1,0 +1,7 @@
+{
+  "name": "turnslip",
+  "owner": { "name": "turnslip" },
+  "plugins": [
+    { "name": "turnslip", "source": "./plugin", "description": "A slip after every Claude turn: what changed, what's risky, what Claude didn't mention. Undo in one command." }
+  ]
+}

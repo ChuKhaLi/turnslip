@@ -1,0 +1,224 @@
+/* turnslip.dev. Tokens first, then components. The reasoning and the measured pairs are in
+   docs/design/design-system.md; test/site.test.mjs asserts every pair, so a token change that
+   breaks one fails `npm test`. Every colour is declared here, on its own custom property line. */
+
+:root {
+  /* ink: the neutral, hue 262 at chroma 0.002 to 0.010 (oklch per step in the design doc). */
+  --ink-50: #F9FAFB;
+  --ink-100: #F3F4F6;
+  --ink-200: #E3E5E9;
+  --ink-300: #D2D4D9;
+  --ink-400: #9EA1A7;
+  --ink-500: #6F7379;
+  --ink-600: #51545A;
+  --ink-700: #3E4145;
+  --ink-800: #26282C;
+  --ink-900: #17181C;
+  --ink-950: #08090C;
+  /* carbon: the accent, hue 262; Tickover's chroma profile x1.6, capped at 90% of sRGB. */
+  --carbon-50: #F8FAFE;
+  --carbon-100: #EFF4FE;
+  --carbon-200: #D9E6FC;
+  --carbon-300: #C0D5FB;
+  --carbon-400: #719FF6;
+  --carbon-500: #4470C2;
+  --carbon-600: #305292;
+  --carbon-700: #243F71;
+  --carbon-800: #14274B;
+  --carbon-900: #0A1730;
+  --carbon-950: #030918;
+  --white: #FFFFFF;
+
+  /* What Claude Code prints, captured through a pty (spike §15). A picture of the real thing,
+     so these never change with the theme. */
+  --cc-fg: var(--ink-100);
+  --cc-dim: #999999;
+  --cc-tool: #4EBA65;
+  --cc-reply: #FFFFFF;
+  --cc-file: #B1B9F9;
+
+  /* Roles, light. */
+  --bg: var(--ink-50);
+  --card: var(--white);
+  --head: var(--ink-900);
+  --fg: var(--ink-800);
+  --muted: var(--ink-600);
+  --hairline: var(--ink-200);
+  --control-edge: var(--ink-500);
+  --link: var(--carbon-600);
+  --focus: var(--carbon-600);
+  --callout: var(--carbon-600);
+  --primary: var(--carbon-400);
+  --primary-hover: var(--carbon-300);
+  --on-primary: var(--ink-950);
+  --term: var(--ink-950);
+  --term-frame: var(--ink-950);
+  --lattice: var(--ink-200);
+  --slip-mark: var(--carbon-800);
+
+  --sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: var(--ink-900);
+    --card: var(--ink-800);
+    --head: var(--ink-50);
+    --fg: var(--ink-100);
+    --muted: var(--ink-400);
+    --hairline: var(--ink-700);
+    --control-edge: var(--ink-400);
+    --link: var(--carbon-300);
+    --focus: var(--carbon-300);
+    --callout: var(--carbon-300);
+    --term-frame: var(--carbon-500);
+    --lattice: var(--ink-800);
+  }
+}
+
+/* Self-hosted, latin only. The variable Sans covers every weight from one file. The families are
+   declared as plain "IBM Plex Sans" / "IBM Plex Mono", so the stacks above match what ships
+   (Tickover's trap: a variable package declaring "IBM Plex Sans Variable"). */
+@font-face {
+  font-family: "IBM Plex Sans";
+  src: url("/fonts/plex-sans-latin-wght.v530.woff2") format("woff2");
+  font-weight: 100 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("/fonts/plex-mono-latin-400.v530.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("/fonts/plex-mono-latin-600.v530.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 400 1rem/1.55 var(--sans);
+  text-rendering: optimizeLegibility;
+}
+h1, h2, h3 { color: var(--head); font-weight: 600; margin: 0; text-wrap: balance; }
+h1 { font-size: 2.25rem; line-height: 1.15; letter-spacing: -0.018em; }
+h2 { font-size: 1.5rem; line-height: 1.3; letter-spacing: -0.01em; }
+h3 { font-size: 1.25rem; line-height: 1.35; letter-spacing: -0.006em; }
+p { margin: 0; max-width: 68ch; }
+a { color: var(--link); text-underline-offset: 0.18em; }
+a:hover { text-decoration-thickness: 2px; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+code, pre, kbd { font-family: var(--mono); font-size: 0.875rem; }
+
+.skip { position: absolute; left: -999px; }
+.skip:focus { left: 16px; top: 16px; background: var(--card); padding: 8px 12px; border-radius: 6px; }
+
+header.site, main, footer.site { max-width: 1120px; margin-inline: auto; padding-inline: 16px; }
+@media (min-width: 768px) { header.site, main, footer.site { padding-inline: 32px; } }
+
+header.site { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; padding-block: 20px; }
+.brand { font: 600 1.125rem var(--mono); color: var(--head); text-decoration: none; }
+header.site nav, footer.site nav { display: flex; flex-wrap: wrap; gap: 4px 20px; }
+header.site nav a, footer.site nav a { color: var(--muted); text-decoration: none; padding-block: 12px; }
+header.site nav a:hover, footer.site nav a:hover { color: var(--head); }
+
+main { display: grid; gap: 96px; padding-block: 32px 96px; }
+section { display: grid; gap: 24px; min-width: 0; }
+
+.hero { position: relative; gap: 32px; padding-block: 32px; overflow-x: clip; }
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: -32px 0 0;
+  z-index: -1;
+  background-image: linear-gradient(var(--lattice) 1px, transparent 1px), linear-gradient(90deg, var(--lattice) 1px, transparent 1px);
+  background-size: 8.4px 21px;
+  mask-image: linear-gradient(to bottom, black 60%, transparent);
+}
+.display { font-size: clamp(2.5rem, 5vw, 3.75rem); line-height: 1.05; letter-spacing: -0.022em; }
+.lead { font-size: 1.125rem; color: var(--muted); }
+.hero-text { display: grid; gap: 16px; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
+
+.demo { margin: 0; min-width: 0; }
+.term {
+  background: var(--term);
+  color: var(--cc-fg);
+  font: 400 0.875rem/1.5 var(--mono);
+  white-space: pre;
+  overflow-x: auto;
+  padding: 20px 24px;
+  border-radius: 8px;
+  outline: 1px solid var(--term-frame);
+}
+.term b { font-weight: 600; }
+.cc-prompt { color: var(--cc-fg); }
+.cc-tool { color: var(--cc-tool); }
+.cc-reply { color: var(--cc-reply); }
+.cc-file { color: var(--cc-file); }
+.cc-dim { color: var(--cc-dim); }
+.slip { color: var(--cc-dim); animation: slip-mark 1.6s ease-out 0.8s 1; }
+@keyframes slip-mark { 0% { background: transparent; } 30% { background: var(--slip-mark); } 100% { background: transparent; } }
+@media (prefers-reduced-motion: reduce) { .slip { animation: none; } }
+
+.callout { color: var(--callout); font-weight: 500; border-left: 2px solid var(--callout); padding-left: 12px; }
+
+.catches ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 32px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); }
+.catches li { display: grid; gap: 8px; align-content: start; }
+
+.plan-grid { display: grid; gap: 24px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); }
+.plan { background: var(--card); border: 1px solid var(--hairline); border-radius: 10px; padding: 24px; display: grid; gap: 16px; align-content: start; }
+.plan ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.price { color: var(--fg); }
+.figure { font: 600 1.5rem var(--mono); font-variant-numeric: tabular-nums; color: var(--head); }
+.fine { font-size: 0.875rem; color: var(--muted); }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 20px; border-radius: 6px; font: 600 1rem var(--sans); text-decoration: none; cursor: pointer; border: 0; }
+.btn-primary { background: var(--primary); color: var(--on-primary); }
+.btn-primary:hover { background: var(--primary-hover); }
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; background: var(--primary); }
+.btn-secondary { background: transparent; color: var(--head); box-shadow: inset 0 0 0 1px var(--control-edge); }
+.plan .btn { justify-self: start; }
+
+pre.cmd { margin: 0; background: var(--card); border: 1px solid var(--hairline); border-radius: 6px; padding: 12px 16px; overflow-x: auto; color: var(--head); }
+
+.install, .delivery { gap: 16px; }
+.delivery ol { margin: 0; padding-left: 24px; display: grid; gap: 8px; max-width: 68ch; }
+.faq { gap: 12px; }
+.faq h3 { margin-top: 12px; font-size: 1rem; line-height: 1.55; letter-spacing: 0; }
+
+footer.site { display: grid; gap: 12px; padding-block: 32px 48px; border-top: 1px solid var(--hairline); color: var(--muted); font-size: 0.875rem; }
+
+/* The hero stays one column at every width: the slip is about 100 characters (about 860px of
+   cells), so the terminal needs the whole content width to show it without scrolling. */
+.hero .callout { margin-top: -16px; }
+
+/* A narrow terminal wraps the slip, as Claude Code does (spike §15: wrapped at the terminal width,
+   continuation lines indented 5 columns), so a phone shows the whole slip without scrolling. */
+@media (max-width: 1023px) {
+  .term { white-space: pre-wrap; overflow-wrap: anywhere; padding: 16px; }
+  .slip { display: inline-block; padding-left: 5ch; text-indent: -5ch; }
+}
+
+main.legal { display: grid; gap: 16px; max-width: calc(68ch + 64px); padding-block: 32px 96px; }
+main.legal h2 { margin-top: 24px; font-size: 1.25rem; line-height: 1.35; }
+
+body.og { width: 1200px; height: 630px; overflow: hidden; display: grid; align-content: center; gap: 40px; padding: 72px; margin: 0; }
+body.og .display { font-size: 4rem; }
+body.og .term { font-size: 1.0625rem; }
+body.og .slip { animation: none; }

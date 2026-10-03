@@ -1,0 +1,8 @@
+{
+  "name": "turnslip",
+  "private": true,
+  "license": "FSL-1.1-MIT",
+  "type": "module",
+  "engines": { "node": ">=18" },
+  "scripts": { "test": "node --test \"test/*.test.mjs\"" }
+}

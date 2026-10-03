@@ -1,0 +1,11 @@
+// Cloudflare Workers static assets for turnslip.dev. No Worker script: Cloudflare serves site/
+// as is. Deployed by Workers Builds on every push to main (docs/checklists/site.md).
+{
+  "name": "turnslip-site",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./site",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
+  }
+}

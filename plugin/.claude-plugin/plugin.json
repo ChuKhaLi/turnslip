@@ -1,0 +1,7 @@
+{
+  "name": "turnslip",
+  "version": "0.1.0",
+  "description": "A slip after every Claude turn: what changed, what's risky, what Claude didn't mention. Undo in one command.",
+  "license": "FSL-1.1-MIT",
+  "repository": "https://github.com/ChuKhaLi/turnslip"
+}
