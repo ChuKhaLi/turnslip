@@ -86,3 +86,42 @@ test('secret: sk- inside a hyphenated or word identifier does not fire; a standa
   assert.deepEqual(line('key: sk-ant-abcdefghijklmnopqrstuvwxyz'), ['secret'])
   assert.deepEqual(line('sk-abcdefghijklmnopqrstuvwxyz'), ['secret']) // at the start of the line
 })
+
+// A commit message or a note that names a command is text, not that command (a 📦 seen live, 2026-10-04).
+test('commands quoted as text do not fire: messages, echo, heredoc and here-string bodies', () => {
+  assert.deepEqual(kinds([], ['git commit -q -m "fix: item 4 ran npm install with PowerShell"']), [])
+  assert.deepEqual(kinds([], ["git commit -m 'docs: git push and rm -rf dist explained'"]), [])
+  assert.deepEqual(kinds([], ['gh pr create --title "npm publish flow" --body "run git push then npm publish"']), [])
+  assert.deepEqual(kinds([], ['echo "npm install left-pad" >> notes.md', "printf 'git push\\n' > todo.txt"]), [])
+  assert.deepEqual(kinds([], ["git commit -q -F - <<'EOF'\nfix: npm install, git push, rm -rf dist\nEOF"]), [])
+  assert.deepEqual(kinds([], ["cat > notes.md <<EOF\nDROP TABLE users\nEOF"]), [])
+  assert.deepEqual(kinds([], ["git commit -m @'\nnpm install and git push\n'@"]), [])
+})
+
+test('commands still fire around quoted text and when a heredoc feeds a shell', () => {
+  assert.deepEqual(kinds([], ['git commit -m "release" && git push origin main']), ['ship'])
+  assert.deepEqual(kinds([], ['echo y | npm install left-pad']), ['packages'])
+  assert.deepEqual(kinds([], ["bash <<'EOF'\nnpm install left-pad\nEOF"]), ['packages'])
+  assert.deepEqual(kinds([], ["ssh host <<EOF\nrm -rf build\nEOF"]), ['delete'])
+  assert.deepEqual(kinds([], ['bash -c "npm install left-pad"']), ['packages'])
+  assert.deepEqual(kinds([], ['psql -c "DROP TABLE users"']), ['database'])
+})
+
+// Blanking text must never hide what runs: a heredoc fed to a database client or an interpreter, or a
+// command substitution inside a quoted message (security review, 2026-10-04).
+test('heredocs fed to anything but cat, tee, git or gh, and quoted substitutions, still fire', () => {
+  assert.deepEqual(kinds([], ["psql mydb <<'SQL'\nDROP TABLE users;\nSQL"]), ['database'])
+  assert.deepEqual(kinds([], ["sudo bash <<EOF\nnpm install left-pad\nEOF"]), ['packages'])
+  assert.deepEqual(kinds([], ["python - <<EOF\nimport os; os.system('git push')\nEOF"]), ['ship'])
+  assert.deepEqual(kinds([], ["cat <<EOF > notes.md\n$(npm install left-pad)\nEOF"]), ['packages'])
+  assert.deepEqual(kinds([], ['git commit -m "release $(git push origin main)"']), ['ship'])
+  assert.deepEqual(kinds([], ['echo "`npm install left-pad`" > out.txt']), ['packages'])
+  assert.deepEqual(kinds([], ["cat <<'EOF' > notes.md\n$(npm install left-pad)\nEOF"]), [])
+})
+
+test('text piped on to another program still fires', () => {
+  assert.deepEqual(kinds([], ["cat <<EOF | bash\nnpm install left-pad\nEOF"]), ['packages'])
+  assert.deepEqual(kinds([], ['echo "npm install left-pad" | sh']), ['packages'])
+  assert.deepEqual(kinds([], ["printf 'git push' | bash"]), ['ship'])
+  assert.deepEqual(kinds([], ['echo "npm install left-pad" || true']), [])
+})

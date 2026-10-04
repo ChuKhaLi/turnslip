@@ -25,6 +25,37 @@ const SHIP_CMD = [/\bgit\s+push\b/, /\bnpm\s+publish\b/, /\bvercel\b[^|;&]*--pro
 const base = (p) => p.slice(p.lastIndexOf('/') + 1)
 const any = (res, s) => res.some((r) => r.test(s))
 
+// Text that only names a command is not that command: a commit message, a PR body, an echo into a
+// note, a heredoc or a PowerShell here-string written to a file (a commit message raised a 📦 on
+// 2026-10-04). It is blanked before the command rules read the line, but only where it cannot run:
+// a heredoc only when cat, tee, git or gh reads it (never psql, python, bash, ssh, sudo …), and
+// nothing that holds a command substitution the shell would expand. A quoted bash -c "…" or
+// psql -c "…" is no message or print argument, so it is never blanked.
+const INERT = /^(?:cat|tee|git|gh)$/i
+const HEREDOC = /(<<-?[ \t]*(['"]?)([A-Za-z_]\w*)\2[^\n]*\n)([\s\S]*?)(\n[ \t]*\3[ \t]*(?=\n|$)|$)/g
+const HERE_STRING = /@(['"])\r?\n([\s\S]*?)\r?\n\1@/g
+const QUOTED = /"(?:[^"\\]|\\.)*"|'[^']*'/g
+const MESSAGE_ARG = /(\s(?:-m|-b|-t|--message|--body|--title|--notes|--subject)(?:\s+|=))("(?:[^"\\]|\\.)*"|'[^']*')/g
+const PRINT_CMD = /\b(echo|printf|Write-Host|Write-Output)\b([^;&|<>\n]*)/gi
+const SUBST = /\$\(|\x60/
+
+// The program a heredoc feeds: the first word of its command, path and .exe dropped.
+const feeds = (before) => (before.split(/\n|;|&&|\|\|?/).at(-1).trim().split(/\s+/)[0] ?? '').replace(/^.*[\\/]/, '').replace(/\.exe$/i, '')
+// Single quotes never expand; double quotes (and an unquoted heredoc) expand $( ) and backticks.
+const blank = (q) => (q.startsWith("'") ? "''" : SUBST.test(q) ? q : '""')
+
+// Text piped on (`| bash`, `| sh`) runs after all; `||` is no pipe.
+const PIPE = /(?<!\|)\|(?!\|)/
+const pipedOn = (rest) => /^\s*\|(?!\|)/.test(rest)
+
+export function commandText(cmd) {
+  const out = String(cmd)
+    .replace(HEREDOC, (m, open, q, tag, body, close, at, all) => (INERT.test(feeds(all.slice(0, at))) && !PIPE.test(open) && (q === "'" || !SUBST.test(body)) ? open + close : m))
+    .replace(HERE_STRING, (m, q, body) => (q === "'" || !SUBST.test(body) ? "''" : m))
+    .replace(MESSAGE_ARG, (m, flag, q) => flag + blank(q))
+  return out.replace(PRINT_CMD, (m, verb, args, at, all) => (pipedOn(all.slice(at + m.length)) ? m : verb + args.replace(QUOTED, blank)))
+}
+
 export function evaluateRules({ changes, commands, root }) {
   const flags = []
   for (const c of changes) {
@@ -39,10 +70,11 @@ export function evaluateRules({ changes, commands, root }) {
     if (any(SHIP_PATH, c.path)) flags.push({ kind: 'ship', path: c.path })
   }
   for (const command of commands) {
-    if (any(DELETE_CMD, command)) flags.push({ kind: 'delete', command })
-    if (any(DB_CMD, command)) flags.push({ kind: 'database', command })
-    if (any(PKG_CMD, command)) flags.push({ kind: 'packages', command })
-    if (any(SHIP_CMD, command)) flags.push({ kind: 'ship', command })
+    const text = commandText(command)
+    if (any(DELETE_CMD, text)) flags.push({ kind: 'delete', command })
+    if (any(DB_CMD, text)) flags.push({ kind: 'database', command })
+    if (any(PKG_CMD, text)) flags.push({ kind: 'packages', command })
+    if (any(SHIP_CMD, text)) flags.push({ kind: 'ship', command })
     const paths = outsideTargets(command, root)
     if (paths.length) flags.push({ kind: 'outside', command, paths })
   }
