@@ -39,8 +39,8 @@ const MESSAGE_ARG = /(\s(?:-m|-b|-t|--message|--body|--title|--notes|--subject)(
 const PRINT_CMD = /\b(echo|printf|Write-Host|Write-Output)\b([^;&|<>\n]*)/gi
 const SUBST = /\$\(|\x60/
 
-// The program a heredoc feeds: the first word of its command, path and .exe dropped.
-const feeds = (before) => (before.split(/\n|;|&&|\|\|?/).at(-1).trim().split(/\s+/)[0] ?? '').replace(/^.*[\\/]/, '').replace(/\.exe$/i, '')
+// The program a statement starts with, path and .exe dropped.
+const program = (statement) => (statement.trim().split(/\s+/)[0] ?? '').replace(/^.*[\\/]/, '').replace(/\.exe$/i, '')
 // Single quotes never expand; double quotes (and an unquoted heredoc) expand $( ) and backticks.
 const blank = (q) => (q.startsWith("'") ? "''" : SUBST.test(q) ? q : '""')
 
@@ -48,20 +48,80 @@ const blank = (q) => (q.startsWith("'") ? "''" : SUBST.test(q) ? q : '""')
 // all, so its statement is checked whole; `||` is no pipe.
 const RUNS_ON = /(?<!\|)\|(?!\|)|[<>]\(/
 const STATEMENT_END = /\n|;|&&|\|\|/
+const HEREDOC_OPEN = /^<<-?[ \t]*(['"]?)([A-Za-z_]\w*)\1/
+
+// The levels the end of `prefix` sits in, outermost first: the top level, then each quote, $( ),
+// backtick or parenthesis still open, each with its statement so far (for a level that holds
+// another, up to where that one opens). Heredoc bodies are skipped. Null inside a heredoc body.
+export function levels(prefix) {
+  const stack = [{ kind: 'top', start: 0, open: 0 }]
+  const push = (kind, at, start) => stack.push({ kind, open: at, start })
+  const pending = []
+  for (let i = 0; i < prefix.length; i++) {
+    const c = prefix[i]
+    const top = stack.at(-1).kind
+    if (top === "'") { if (c === "'") stack.pop(); continue }
+    if (c === '\\') { i++; continue }
+    if (top === '"') {
+      if (c === '"') stack.pop()
+      else if (c === '`') push('`', i, i + 1)
+      else if (c === '$' && prefix[i + 1] === '(') { push('(', i, i + 2); i++ }
+      continue
+    }
+    if (c === "'" || c === '"') push(c, i, i + 1)
+    else if (c === '`') { if (top === '`') stack.pop(); else push('`', i, i + 1) }
+    else if (c === '$' && prefix[i + 1] === '(') { push('(', i, i + 2); i++ }
+    else if (c === '(') push('(', i, i + 1)
+    else if (c === ')') { if (top === '(') stack.pop() }
+    else if (c === '<' && prefix[i + 1] === '<' && prefix[i + 2] !== '<' && HEREDOC_OPEN.test(prefix.slice(i))) {
+      const m = HEREDOC_OPEN.exec(prefix.slice(i))
+      pending.push(m[2])
+      i += m[0].length - 1
+    } else if (c === '\n' && pending.length) {
+      for (const tag of pending.splice(0)) {
+        const end = new RegExp(`\\n[ \\t]*${tag}[ \\t]*(?=\\n|$)`).exec(prefix.slice(i))
+        if (!end) return null
+        i += end.index + end[0].length
+      }
+      i-- // the newline after the terminator is read next
+    } else {
+      const sep = STATEMENT_END.exec(prefix.slice(i, i + 2))
+      if (sep?.index === 0) { i += sep[0].length - 1; stack.at(-1).start = i + 1 }
+    }
+  }
+  return stack.map((l, k) => ({ kind: l.kind, statement: prefix.slice(l.start, k + 1 < stack.length ? stack[k + 1].open : prefix.length) }))
+}
+
+// Text at the end of `prefix` cannot run when every statement around it (a quoted string is judged
+// by the statement it is an argument of) starts with a program that only reads or records text (`git commit -m "$(cat <<'EOF'`,
+// the way Claude Code writes commit messages), none of them piping on. `own` judges the innermost
+// statement; `after` is what follows the text on its line, which a nested text's pipe sits in.
+const RECORDS = /^(?:cat|tee|git|gh|echo|printf|Write-Host|Write-Output)$/i
+function cannotRun(prefix, own, after) {
+  const ls = levels(prefix)
+  if (!ls) return false
+  const statements = ls.filter((l) => l.kind !== '"' && l.kind !== "'").map((l) => l.statement)
+  const outer = statements.slice(0, -1)
+  if (outer.some((s) => !RECORDS.test(program(s)) || RUNS_ON.test(s))) return false
+  if (outer.length && RUNS_ON.test(after)) return false
+  return own(statements.at(-1))
+}
 
 export function commandText(cmd) {
   const out = String(cmd)
     .replace(HEREDOC, (m, open, q, tag, body, close, at, all) => {
-      const statement = all.slice(0, at).split(STATEMENT_END).at(-1) + open
-      return INERT.test(feeds(all.slice(0, at))) && !RUNS_ON.test(statement) && (q === "'" || !SUBST.test(body)) ? open + close : m
+      const after = all.slice(at + m.length).replace(/^\n/, '').split('\n')[0]
+      const own = (s) => INERT.test(program(s)) && !RUNS_ON.test(s + open)
+      return (q === "'" || !SUBST.test(body)) && cannotRun(all.slice(0, at), own, after) ? open + close : m
     })
     .replace(HERE_STRING, (m, q, body) => (q === "'" || !SUBST.test(body) ? "''" : m))
     .replace(MESSAGE_ARG, (m, flag, q) => flag + blank(q))
-  // A print is text only when it starts its statement: after `eval`, `$(`, a backtick or `bash -c "`
-  // its output may run.
+  // A print is text only when it starts its statement: after `eval` or `x=$(`, or inside
+  // `bash -c "…"`, its output may run.
   return out.replace(PRINT_CMD, (m, verb, args, at, all) => {
-    const startsStatement = /^\s*$/.test(all.slice(0, at).split(STATEMENT_END).at(-1))
-    return startsStatement && !RUNS_ON.test(all.slice(at + m.length).split(STATEMENT_END)[0]) ? verb + args.replace(QUOTED, blank) : m
+    const rest = all.slice(at + m.length)
+    const own = (s) => !s.trim() && !RUNS_ON.test(rest.split(STATEMENT_END)[0])
+    return cannotRun(all.slice(0, at), own, rest.split('\n')[0]) ? verb + args.replace(QUOTED, blank) : m
   })
 }
 

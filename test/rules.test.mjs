@@ -140,3 +140,28 @@ test('print text inside eval, a substitution or a -c string still fires', () => 
   assert.deepEqual(kinds([], ["x=`echo 'npm install left-pad'`"]), ['packages'])
   assert.deepEqual(kinds([], ["cd docs && echo 'npm install left-pad' >> notes.md"]), [])
 })
+
+test('text nested in a quoted -c string, $( ) or a backtick still fires; a top-level one does not', () => {
+  assert.deepEqual(kinds([], ["bash -c \"cd x; echo 'npm install left-pad' | sh\""]), ['packages'])
+  assert.deepEqual(kinds([], ["sh -c \"true; echo 'npm install left-pad'\""]), ['packages'])
+  assert.deepEqual(kinds([], ["eval \"$(cat <<'EOF'\nnpm install left-pad\nEOF\n)\""]), ['packages'])
+  assert.deepEqual(kinds([], ["x=`cat <<EOF\ngit push\nEOF\n`"]), ['ship'])
+  assert.deepEqual(kinds([], ["echo 'it''s fine'; git commit -q -F - <<'EOF'\ndon't npm install\nEOF\necho 'npm install left-pad' >> notes.md"]), [])
+})
+
+// Claude Code writes its commit messages as git commit -m "$(cat <<'EOF' … EOF)": text, every level inert.
+test('a heredoc in a substitution is text only when every level around it is inert', () => {
+  assert.deepEqual(kinds([], ["git commit -m \"$(cat <<'EOF'\nfix: npm install and git push\nEOF\n)\""]), [])
+  assert.deepEqual(kinds([], ["git commit -m \"$(cat <<'EOF'\nnpm install\nEOF\n)\" | sh"]), ['packages'])
+  assert.deepEqual(kinds([], ["x=\"$(cat <<'EOF'\nnpm install\nEOF\n)\""]), ['packages'])
+  assert.deepEqual(kinds([], ["git commit -m \"$(cat <<'EOF'\ndon't npm install\nEOF\n)\" && echo 'git push' >> notes.md"]), [])
+  assert.deepEqual(kinds([], ["echo 'a' \"b\"; cat <<EOF > notes.md\nnpm install\nEOF"]), [])
+  assert.deepEqual(kinds([], ["cat <<EOF > notes.md\nnpm install"]), [])
+  assert.deepEqual(kinds([], ["(cat <<EOF\nnpm install\nEOF\n) | sh"]), ['packages'])
+})
+
+test('the scanner skips heredoc bodies and keeps text inside an unfinished one', () => {
+  assert.deepEqual(kinds([], ["psql <<'SQL'\nSELECT 1; -- don't\nSQL\necho 'npm install left-pad' >> notes.md"]), [])
+  assert.deepEqual(kinds([], ["bash <<'EOF'\necho 'npm install left-pad'\nEOF"]), ['packages'])
+  assert.deepEqual(kinds([], ["bash <<EOF\necho 'npm install left-pad'"]), ['packages'])
+})
