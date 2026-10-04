@@ -165,3 +165,10 @@ test('the scanner skips heredoc bodies and keeps text inside an unfinished one',
   assert.deepEqual(kinds([], ["bash <<'EOF'\necho 'npm install left-pad'\nEOF"]), ['packages'])
   assert.deepEqual(kinds([], ["bash <<EOF\necho 'npm install left-pad'"]), ['packages'])
 })
+
+// Where the scanner might read a line differently from the shell, it keeps the flag.
+test('comments and ANSI-C quotes make the scanner keep the flag', () => {
+  assert.deepEqual(kinds([], ["# don't worry\necho 'npm install left-pad' | sh"]), ['packages'])
+  assert.deepEqual(kinds([], ["echo $'a\' b' ; echo 'npm install left-pad' >> notes.md"]), ['packages'])
+  assert.deepEqual(kinds([], ["git commit -m 'fix #12: npm install docs'"]), [])
+})

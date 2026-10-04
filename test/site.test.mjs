@@ -270,9 +270,11 @@ test('llms.txt repeats the home page facts and the install commands exactly', ()
   const t = read('llms.txt')
   for (const s of ['$19', '$29', 'No subscription.', '14 days', 'up to 3 machines', 'Dodo Payments', 'FSL-1.1-MIT',
     'support@turnslip.dev', '`claude plugin marketplace add ChuKhaLi/turnslip`', '`claude plugin install turnslip@turnslip`',
-    "a key written to a file your .gitignore doesn't exclude, or a new .env", 'Node.js 18']) {
+    "a key written to a file your .gitignore doesn't exclude, or a new .env", 'Node.js 18', 'Claude Code 2.1.289 or later']) {
     assert.ok(t.includes(s), `llms.txt does not say "${s}"`)
   }
+  // Spec §12.2: the MessageDisplay hook needs 2.1.289; the home page says so too.
+  assert.ok(read('index.html').includes('Needs Claude Code 2.1.289 or later'))
 })
 
 test('llms.txt explains the receipt check in the words the slip prints (render.mjs)', () => {

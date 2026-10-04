@@ -7,7 +7,7 @@
 - After each turn, the slip appears under Claude's reply, for example: `turnslip · Added a login page · 2 files · 🔑 key added in config.js · /turnslip:undo`.
 - turnslip snapshots the project at the start and the end of each turn and compares them, so files that a shell command created, changed or deleted count too, not only Claude's edits. `npm install` shows up as packages changed.
 - The claim check: at the start of each turn, a `UserPromptSubmit` hook asks Claude to end its reply with one line, `<receipt>one plain-language sentence of what you did | files: comma-separated paths you changed, or none</receipt>`. At the end of the turn, the `Stop` hook reads that line and compares it with the files that really changed on disk. A file that changed but is missing from the list shows as `not mentioned: config.js`; a listed file that did not change shows as `said but not changed: …`. Without a receipt line, the slip carries only the facts and says `Claude gave no summary`.
-- The receipt line is visible in Claude's reply on purpose: no markdown form hides it in the terminal.
+- On screen the receipt line is hidden by a `MessageDisplay` hook. The stored reply keeps it, so the `Stop` hook still reads it, and the slip shows its sentence.
 - `/turnslip:undo` puts the last turn's files back and keeps any file the user changed since.
 - Snapshots and slips stay in `~/.turnslip`. Nothing leaves the machine, except that Pro sends the license key and a machine id to Dodo Payments to check the license.
 
@@ -18,7 +18,7 @@
 
 ## Install
 
-Needs Node.js 18 or later. In a terminal:
+Needs Claude Code 2.1.289 or later and Node.js 18 or later. In a terminal:
 
 1. `claude plugin marketplace add ChuKhaLi/turnslip`
 2. `claude plugin install turnslip@turnslip`

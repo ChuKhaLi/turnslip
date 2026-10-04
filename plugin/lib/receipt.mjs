@@ -8,6 +8,21 @@ export const RECEIPT_INSTRUCTION =
 // Anchored to a line of its own: a mention of the tag inside prose must not start a match.
 const RECEIPT_LINE = /^[ \t>*_`-]*<receipt>([^<\n]*)<\/receipt>[ \t*_`.\r]*$/gm
 
+// The screen's copy of a reply without its receipt lines (a blank line just before one goes too, so
+// no gap is left), or null when it holds none. The same anchored pattern as parseReceipt: what Stop
+// reads is what the screen hides, and a mention in prose stays visible.
+const RECEIPT_ONE = new RegExp(RECEIPT_LINE.source)
+export function hideReceipt(text) {
+  const out = []
+  let hid = false
+  for (const line of String(text ?? '').split('\n')) {
+    if (!RECEIPT_ONE.test(line)) { out.push(line); continue }
+    hid = true
+    if (out.length && !out.at(-1).trim()) out.pop()
+  }
+  return hid ? out.join('\n') : null
+}
+
 export function parseReceipt(text) {
   let last = null
   for (const m of String(text ?? '').matchAll(RECEIPT_LINE)) last = m[1]

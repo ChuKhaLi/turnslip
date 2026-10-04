@@ -10,7 +10,7 @@ looks risky, and what Claude didn't mention. Take the whole turn back with `/tur
     claude plugin marketplace add ChuKhaLi/turnslip
     claude plugin install turnslip@turnslip
 
-Needs Node.js 18 or newer. `/turnslip:setup` checks. Site: https://turnslip.dev
+Needs Claude Code 2.1.289 or newer and Node.js 18 or newer. `/turnslip:setup` checks Node. Site: https://turnslip.dev
 
 ## Commands
 
