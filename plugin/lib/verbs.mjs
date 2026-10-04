@@ -1,4 +1,5 @@
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { finishOpenTurn } from './hook.mjs'
 import { formatHistory, reportData } from './history.mjs'
 import { isTrackableRoot, projectDir } from './paths.mjs'
@@ -6,7 +7,8 @@ import { readJson, writeJson } from './store.mjs'
 import { findTurn, listHistory } from './turns.mjs'
 import { undoLatest, undoTurn } from './undo.mjs'
 
-const VERSION = '0.1.0'
+// The one version: plugin.json's, which Claude Code compares to decide an update.
+const VERSION = readJson(join(dirname(fileURLToPath(import.meta.url)), '..', '.claude-plugin', 'plugin.json'))?.version ?? 'unknown'
 export const USAGE = 'usage: /turnslip:undo [n|id] · /turnslip:history [n] [--ids] · /turnslip:report · /turnslip:mode simple|detailed · /turnslip:setup'
 const NOT_TRACKED = 'turnslip does not track this folder (home directory or drive root).'
 

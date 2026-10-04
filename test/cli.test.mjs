@@ -23,7 +23,7 @@ test('mode simple is saved; detailed is Pro', () => {
 test('setup prints version, Node and data location', () => {
   const home = tempDir()
   const r = cli(['setup'], makeProject({}), home)
-  assert.match(r.stdout, /^turnslip 0\.1\.0 · Node v\d+/)
+  assert.match(r.stdout, /^turnslip \d+\.\d+\.\d+ · Node v\d+/) // the exact string is pinned in verbs.test.mjs
   assert.ok(r.stdout.includes(home))
 })
 

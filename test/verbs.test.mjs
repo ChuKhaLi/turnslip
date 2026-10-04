@@ -127,3 +127,10 @@ test('undo leaves alone an open turn with no tool events (the prompt that runs u
   const open = listTurnIds(projectDir(p.home, p.root)).map((id) => loadTurn(projectDir(p.home, p.root), id)).filter((t) => !t.finished)
   assert.equal(open.length, 1)
 })
+
+// One version: /turnslip:setup prints the one in plugin.json, the one Claude Code updates by.
+test('setup prints the version plugin.json names', () => {
+  const p = twoTurns()
+  const { version } = JSON.parse(readFileSync(new URL('../plugin/.claude-plugin/plugin.json', import.meta.url), 'utf8'))
+  assert.ok(R(p, 'setup').startsWith(`turnslip ${version} · `))
+})
