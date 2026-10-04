@@ -44,16 +44,25 @@ const feeds = (before) => (before.split(/\n|;|&&|\|\|?/).at(-1).trim().split(/\s
 // Single quotes never expand; double quotes (and an unquoted heredoc) expand $( ) and backticks.
 const blank = (q) => (q.startsWith("'") ? "''" : SUBST.test(q) ? q : '""')
 
-// Text piped on (`| bash`, `| sh`) runs after all; `||` is no pipe.
-const PIPE = /(?<!\|)\|(?!\|)/
-const pipedOn = (rest) => /^\s*\|(?!\|)/.test(rest)
+// Text piped on (`| bash`) or sent into a process substitution (`> >(sh)`, `tee >(bash)`) runs after
+// all, so its statement is checked whole; `||` is no pipe.
+const RUNS_ON = /(?<!\|)\|(?!\|)|[<>]\(/
+const STATEMENT_END = /\n|;|&&|\|\|/
 
 export function commandText(cmd) {
   const out = String(cmd)
-    .replace(HEREDOC, (m, open, q, tag, body, close, at, all) => (INERT.test(feeds(all.slice(0, at))) && !PIPE.test(open) && (q === "'" || !SUBST.test(body)) ? open + close : m))
+    .replace(HEREDOC, (m, open, q, tag, body, close, at, all) => {
+      const statement = all.slice(0, at).split(STATEMENT_END).at(-1) + open
+      return INERT.test(feeds(all.slice(0, at))) && !RUNS_ON.test(statement) && (q === "'" || !SUBST.test(body)) ? open + close : m
+    })
     .replace(HERE_STRING, (m, q, body) => (q === "'" || !SUBST.test(body) ? "''" : m))
     .replace(MESSAGE_ARG, (m, flag, q) => flag + blank(q))
-  return out.replace(PRINT_CMD, (m, verb, args, at, all) => (pipedOn(all.slice(at + m.length)) ? m : verb + args.replace(QUOTED, blank)))
+  // A print is text only when it starts its statement: after `eval`, `$(`, a backtick or `bash -c "`
+  // its output may run.
+  return out.replace(PRINT_CMD, (m, verb, args, at, all) => {
+    const startsStatement = /^\s*$/.test(all.slice(0, at).split(STATEMENT_END).at(-1))
+    return startsStatement && !RUNS_ON.test(all.slice(at + m.length).split(STATEMENT_END)[0]) ? verb + args.replace(QUOTED, blank) : m
+  })
 }
 
 export function evaluateRules({ changes, commands, root }) {

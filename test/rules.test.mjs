@@ -125,3 +125,18 @@ test('text piped on to another program still fires', () => {
   assert.deepEqual(kinds([], ["printf 'git push' | bash"]), ['ship'])
   assert.deepEqual(kinds([], ['echo "npm install left-pad" || true']), [])
 })
+
+test('text sent into a process substitution still fires', () => {
+  assert.deepEqual(kinds([], ["cat <<EOF > >(bash)\nnpm install left-pad\nEOF"]), ['packages'])
+  assert.deepEqual(kinds([], ["tee >(sh) <<'EOF'\ngit push origin main\nEOF"]), ['ship'])
+  assert.deepEqual(kinds([], ['echo "npm install left-pad" > >(bash)']), ['packages'])
+  assert.deepEqual(kinds([], ['echo "npm install left-pad" > notes.md; diff <(ls a) <(ls b)']), [])
+})
+
+test('print text inside eval, a substitution or a -c string still fires', () => {
+  assert.deepEqual(kinds([], ["eval \"$(echo 'npm install left-pad')\""]), ['packages'])
+  assert.deepEqual(kinds([], ["eval echo 'git push origin main'"]), ['ship'])
+  assert.deepEqual(kinds([], ["bash -c \"echo 'start'; npm install left-pad\""]), ['packages'])
+  assert.deepEqual(kinds([], ["x=`echo 'npm install left-pad'`"]), ['packages'])
+  assert.deepEqual(kinds([], ["cd docs && echo 'npm install left-pad' >> notes.md"]), [])
+})
