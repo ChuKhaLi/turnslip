@@ -132,7 +132,8 @@ header.site, main, footer.site { max-width: 1120px; margin-inline: auto; padding
 @media (min-width: 768px) { header.site, main, footer.site { padding-inline: 32px; } }
 
 header.site { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; padding-block: 20px; }
-.brand { font: 600 1.125rem var(--mono); color: var(--head); text-decoration: none; }
+.brand { display: inline-flex; align-items: center; gap: 8px; font: 600 1.125rem var(--mono); color: var(--head); text-decoration: none; }
+.mark { width: 22px; height: 22px; flex: none; color: var(--link); }
 header.site nav, footer.site nav { display: flex; flex-wrap: wrap; gap: 4px 20px; }
 header.site nav a, footer.site nav a { color: var(--muted); text-decoration: none; padding-block: 12px; }
 header.site nav a:hover, footer.site nav a:hover { color: var(--head); }

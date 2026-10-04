@@ -4,7 +4,7 @@
     "UserPromptSubmit": [{ "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/lib/hook.mjs\" 2>/dev/null; exit 0", "timeout": 5 }] }],
     "PostToolUse": [{ "matcher": "Bash|PowerShell|Edit|Write|MultiEdit|NotebookEdit|Task|Agent|mcp__.*", "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/lib/hook.mjs\" 2>/dev/null; exit 0", "timeout": 5 }] }],
     "Stop": [{ "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/lib/hook.mjs\" 2>/dev/null; exit 0", "timeout": 15 }] }],
-    "MessageDisplay": [{ "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/lib/display.mjs\" 2>/dev/null; exit 0", "timeout": 5 }] }],
+    "MessageDisplay": [{ "hooks": [{ "type": "command", "command": "if [ -n \"$BASH_VERSION\" ]; then IFS= read -r -d '' d; else d=$(cat); fi; case \"$d\" in */receipt*) printf '%s' \"$d\" | node \"${CLAUDE_PLUGIN_ROOT}/lib/display.mjs\";; esac 2>/dev/null; exit 0", "timeout": 5 }] }],
     "SessionEnd": [{ "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/lib/hook.mjs\" 2>/dev/null; exit 0", "timeout": 5 }] }]
   }
 }

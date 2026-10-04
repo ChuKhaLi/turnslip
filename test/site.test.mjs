@@ -4,7 +4,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { contrast, PAGES, read, SITE, tokens } from './site-helpers.mjs'
 
-const CSS = 'style.v1.css'
+const CSS = 'style.v2.css'
 
 // [foreground, background, floor]. 4.5 for text, 3.0 for a boundary that carries meaning.
 const PAIRS = [
@@ -59,7 +59,7 @@ test('no green token', () => {
 })
 
 test('every @font-face file exists, is versioned, and the OFL licence ships with them', () => {
-  const css = read('style.v1.css')
+  const css = read('style.v2.css')
   const urls = [...css.matchAll(/url\("?(\/fonts\/[^")]+)"?\)/g)].map((m) => m[1])
   assert.equal(urls.length, 3)
   for (const u of urls) {
@@ -111,7 +111,17 @@ test('the drawn terminal ends with the slip, in the slip colour, and the callout
   const term = /<div class="term"[\s\S]*?<\/div>\s*<\/figure>/.exec(html)?.[0] ?? ''
   assert.match(term, /<span class="slip">\s*⎿ {2}Stop says: turnslip · [^<]+· \/turnslip:undo<\/span>/)
   assert.match(html, /<p class="callout"[^>]*>This line is turnslip\./)
-  assert.match(read('style.v1.css'), /\.slip\s*{[^}]*color:\s*var\(--cc-dim\)/)
+  assert.match(read('style.v2.css'), /\.slip\s*{[^}]*color:\s*var\(--cc-dim\)/)
+})
+
+// Spec §6: Claude Code no longer shows the receipt line (a MessageDisplay hook hides it), so a drawn
+// terminal that shows it would be untrue to the screen (design system: a picture of the real thing).
+test('the drawn terminals show no receipt line: the reply sits right above the slip', () => {
+  for (const f of ['index.html', 'og.html']) {
+    const term = /<div class="term"[\s\S]*?<\/div>/.exec(read(f))?.[0] ?? ''
+    assert.doesNotMatch(term, /receipt/i, f)
+    assert.match(term, /config\.js<\/span>\.\r?\n<span class="slip">/, f)
+  }
 })
 
 test('the JSON-LD offer matches the launch price', () => {
@@ -195,7 +205,7 @@ test('nothing loads from another host and no script runs', () => {
     assert.doesNotMatch(html, /<link[^>]+rel="(stylesheet|preload|icon)"[^>]+href="https?:/, `${p}: external asset`)
     assert.doesNotMatch(html, /<img[^>]+src="https?:/, `${p}: external image`)
   }
-  assert.doesNotMatch(read('style.v1.css'), /@import|url\("?https?:/)
+  assert.doesNotMatch(read('style.v2.css'), /@import|url\("?https?:/)
 })
 
 test('the social image exists at 1200x630', () => {
@@ -297,4 +307,38 @@ test('a text file with non-ASCII characters is served as UTF-8 (Cloudflare sends
     const rule = rules.find((r) => r.path === `/${f}`)
     assert.ok(rule?.headers.includes('Content-Type: text/plain; charset=utf-8'), `/${f} has no UTF-8 Content-Type`)
   }
+})
+
+// The mark (owner's pick, 2026-10-04): the corner Claude Code prints before "Stop says:", which the
+// slip hangs from, plus the slip's one line. One geometry everywhere.
+const MARK_PATH = 'M8 7v17h3'
+const MARK_BAR = '<rect x="15" y="21.5" width="11" height="5" rx="2.5"'
+const pngSize = (file) => { const b = readFileSync(file); return [b.readUInt32BE(16), b.readUInt32BE(20)] }
+
+test('every page header carries the mark beside the name, hidden from screen readers', () => {
+  for (const p of PAGES) {
+    const brand = /<a class="brand" href="\/">([\s\S]*?)<\/a>/.exec(read(p))?.[1] ?? ''
+    assert.match(brand, /^<svg class="mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false">/, p)
+    assert.ok(brand.includes(MARK_PATH) && brand.includes(MARK_BAR), `${p}: not the mark`)
+    assert.match(brand, /<\/svg>turnslip$/, p)
+  }
+  assert.match(read(CSS), /\.brand\s*{[^}]*display:\s*inline-flex/)
+  assert.match(read(CSS), /\.mark\s*{[^}]*color:\s*var\(--link\)/)
+})
+
+test('the favicon is the mark in carbon, lighter on a dark tab', () => {
+  const svg = read('favicon.svg')
+  assert.ok(svg.includes(MARK_PATH) && svg.includes(MARK_BAR))
+  const t = tokens(read(CSS))
+  // The tab draws the mark in the link colour of each theme, as the header does.
+  assert.ok(svg.includes(t.light.get('--link')), 'light: the link colour')
+  assert.match(svg, new RegExp(`prefers-color-scheme: dark\\)[^}]*${t.dark.get('--link')}`), 'dark: the link colour')
+})
+
+test('the touch icon and the plugin icon exist at their sizes and are linked', () => {
+  assert.deepEqual(pngSize(join(SITE, 'apple-touch-icon.png')), [180, 180])
+  for (const p of PAGES) assert.match(read(p), /<link rel="apple-touch-icon" href="\/apple-touch-icon.png">/, p)
+  const manifest = JSON.parse(readFileSync(join(SITE, '..', 'plugin', '.claude-plugin', 'plugin.json'), 'utf8'))
+  assert.equal(manifest.icon, './icon.png')
+  assert.deepEqual(pngSize(join(SITE, '..', 'plugin', 'icon.png')), [512, 512])
 })
