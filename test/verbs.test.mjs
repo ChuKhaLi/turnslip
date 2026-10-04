@@ -3,10 +3,10 @@ import assert from 'node:assert/strict'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import { onStop, onUserPromptSubmit } from '../plugin/lib/hook.mjs'
+import { onPostToolUse, onStop, onUserPromptSubmit } from '../plugin/lib/hook.mjs'
 import { projectDir } from '../plugin/lib/paths.mjs'
 import { snapshot, writeJson } from '../plugin/lib/store.mjs'
-import { listHistory } from '../plugin/lib/turns.mjs'
+import { listHistory, listTurnIds, loadTurn } from '../plugin/lib/turns.mjs'
 import { run } from '../plugin/lib/verbs.mjs'
 import { hookInput, makeProject, tempDir } from './helpers.mjs'
 
@@ -103,4 +103,27 @@ test('undo takes one argument; an empty one or an id prefix matches no turn (NEX
   assert.equal(R(p, 'undo', [id.slice(0, 8)]), `turnslip · no turn ${id.slice(0, 8)} in this project · /turnslip:history lists them`)
   assert.equal(p.read('a.txt'), 'changed\n')
   assert.equal(p.read('b.txt'), 'changed\n')
+})
+
+// Esc fires no Stop, and a slash command's ! line runs before any hook finishes the interrupted turn
+// (captured, release item 7): undo finishes the session's open turn itself before choosing.
+test('undo right after Esc undoes the interrupted turn, not the one before', () => {
+  const p = twoTurns()
+  onUserPromptSubmit({ home: p.home, input: hookInput('UserPromptSubmit', p.root) })
+  writeFileSync(join(p.root, 'a.txt'), 'esc\n')
+  onPostToolUse({ home: p.home, input: hookInput('PostToolUse', p.root, { tool_name: 'Edit', tool_input: { file_path: join(p.root, 'a.txt') }, tool_response: { filePath: join(p.root, 'a.txt'), originalFile: 'changed\n' } }) })
+  const out = R(p, 'undo', ['--session=sess-1'], false)
+  assert.match(out, /interrupted/)
+  assert.equal(p.read('a.txt'), 'changed\n')
+  assert.equal(p.read('b.txt'), 'changed\n')
+})
+
+test('undo leaves alone an open turn with no tool events (the prompt that runs undo)', () => {
+  const p = twoTurns()
+  onUserPromptSubmit({ home: p.home, input: hookInput('UserPromptSubmit', p.root) })
+  R(p, 'undo', ['--session=sess-1'], false)
+  assert.equal(p.read('b.txt'), 'b\n')
+  assert.equal(p.read('a.txt'), 'changed\n')
+  const open = listTurnIds(projectDir(p.home, p.root)).map((id) => loadTurn(projectDir(p.home, p.root), id)).filter((t) => !t.finished)
+  assert.equal(open.length, 1)
 })

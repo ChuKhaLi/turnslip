@@ -250,3 +250,49 @@ test('the 404 says what happened and offers a way back', () => {
   assert.ok(text(html).includes("This page doesn't exist"))
   assert.match(html, /href="\/"/)
 })
+
+test('llms.txt follows llmstxt.org: a title, a summary, sections of links that resolve', () => {
+  const t = read('llms.txt')
+  assert.match(t, /^# turnslip\r?\n\r?\n> \S/)
+  assert.ok(/^## /m.test(t))
+  const links = [...t.matchAll(/\]\((https:\/\/[^)\s]+)\)/g)].map((m) => m[1])
+  assert.ok(links.length >= 5)
+  for (const url of links) {
+    if (url.startsWith('https://github.com/')) { assert.equal(url, 'https://github.com/ChuKhaLi/turnslip'); continue }
+    const path = url.replace(/^https:\/\/turnslip\.dev/, '')
+    assert.notEqual(path, url, `${url} is not on turnslip.dev`)
+    const file = path === '/' ? 'index.html' : /\.[a-z0-9]+$/i.test(path) ? path.slice(1) : `${path.slice(1)}.html`
+    assert.ok(existsSync(join(SITE, file)), `${url} has no file`)
+  }
+})
+
+test('llms.txt repeats the home page facts and the install commands exactly', () => {
+  const t = read('llms.txt')
+  for (const s of ['$19', '$29', 'No subscription.', '14 days', 'up to 3 machines', 'Dodo Payments', 'FSL-1.1-MIT',
+    'support@turnslip.dev', '`claude plugin marketplace add ChuKhaLi/turnslip`', '`claude plugin install turnslip@turnslip`',
+    "a key written to a file your .gitignore doesn't exclude, or a new .env", 'Node.js 18']) {
+    assert.ok(t.includes(s), `llms.txt does not say "${s}"`)
+  }
+})
+
+test('llms.txt explains the receipt check in the words the slip prints (render.mjs)', () => {
+  const t = read('llms.txt')
+  const render = readFileSync(join(SITE, '..', 'plugin', 'lib', 'render.mjs'), 'utf8')
+  const line = '<receipt>one plain-language sentence of what you did | files: comma-separated paths you changed, or none</receipt>'
+  assert.ok(readFileSync(join(SITE, '..', 'plugin', 'lib', 'receipt.mjs'), 'utf8').includes(line), 'receipt.mjs changed its instruction')
+  assert.ok(t.includes(line))
+  for (const s of ['not mentioned: ', 'said but not changed: ', 'Claude gave no summary']) {
+    assert.ok(render.includes(s), `render.mjs no longer prints "${s}"`)
+    assert.ok(t.includes(s.trim()), `llms.txt does not say "${s.trim()}"`)
+  }
+})
+
+test('a text file with non-ASCII characters is served as UTF-8 (Cloudflare sends text/plain without a charset)', () => {
+  const rules = headerRules(read('_headers'))
+  const files = readdirSync(SITE).filter((f) => f.endsWith('.txt') && /[^\x00-\x7f]/.test(read(f)))
+  assert.ok(files.includes('llms.txt'))
+  for (const f of files) {
+    const rule = rules.find((r) => r.path === `/${f}`)
+    assert.ok(rule?.headers.includes('Content-Type: text/plain; charset=utf-8'), `/${f} has no UTF-8 Content-Type`)
+  }
+})

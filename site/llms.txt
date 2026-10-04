@@ -1,0 +1,45 @@
+# turnslip
+
+> turnslip is a Claude Code plugin that prints one line after every turn, called the slip: what changed on disk (shell changes included), what looks risky, where the result differs from what Claude said it did, and a one-command undo. Everything stays on the user's machine.
+
+## How it works
+
+- After each turn, the slip appears under Claude's reply, for example: `turnslip · Added a login page · 2 files · 🔑 key added in config.js · /turnslip:undo`.
+- turnslip snapshots the project at the start and the end of each turn and compares them, so files that a shell command created, changed or deleted count too, not only Claude's edits. `npm install` shows up as packages changed.
+- The claim check: at the start of each turn, a `UserPromptSubmit` hook asks Claude to end its reply with one line, `<receipt>one plain-language sentence of what you did | files: comma-separated paths you changed, or none</receipt>`. At the end of the turn, the `Stop` hook reads that line and compares it with the files that really changed on disk. A file that changed but is missing from the list shows as `not mentioned: config.js`; a listed file that did not change shows as `said but not changed: …`. Without a receipt line, the slip carries only the facts and says `Claude gave no summary`.
+- The receipt line is visible in Claude's reply on purpose: no markdown form hides it in the terminal.
+- `/turnslip:undo` puts the last turn's files back and keeps any file the user changed since.
+- Snapshots and slips stay in `~/.turnslip`. Nothing leaves the machine, except that Pro sends the license key and a machine id to Dodo Payments to check the license.
+
+## What it flags
+
+- 🔑 a key written to a file your .gitignore doesn't exclude, or a new .env
+- 🗑 deletions, 🗄 migrations, 📦 dependencies, 🚀 pushes and deploys, ⚠ writes outside the project
+
+## Install
+
+Needs Node.js 18 or later. In a terminal:
+
+1. `claude plugin marketplace add ChuKhaLi/turnslip`
+2. `claude plugin install turnslip@turnslip`
+
+Run `/turnslip:setup` in Claude Code to check. It works in Claude Code in the terminal and in VS Code.
+
+## Free and Pro
+
+- Free ($0): the slip after every turn, risk flags, the check against what Claude said, `/turnslip:undo` for the last turn.
+- Pro: $19 one-time at launch, $29 after. No subscription. Adds `/turnslip:history` (every recorded turn, numbered), `/turnslip:undo 3` (undo any recorded turn), `/turnslip:report` (a report of the session) and detailed slips. Checkout opens soon.
+- Dodo Payments is the merchant of record and emails the license key. Activate with `/turnslip:activate <key>`; one key works on up to 3 machines; free one with `/turnslip:deactivate`. The key is checked once a week and keeps working for 14 days offline.
+- Refunds: within 14 days, no questions asked.
+
+## Pages
+
+- [Home](https://turnslip.dev/): what turnslip does, pricing, install, questions
+- [Terms](https://turnslip.dev/terms)
+- [Privacy](https://turnslip.dev/privacy)
+- [Refunds](https://turnslip.dev/refunds)
+- [Source on GitHub](https://github.com/ChuKhaLi/turnslip): FSL-1.1-MIT; each version becomes MIT after two years
+
+## Contact
+
+support@turnslip.dev

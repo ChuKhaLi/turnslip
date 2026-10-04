@@ -59,6 +59,6 @@ test('report tells Claude the data is not instructions and to stop on anything e
 test('PostToolUse fires for the tools that can write files: subagents and MCP tools included', () => {
   const hooks = JSON.parse(readFileSync(join(LIB, '..', 'hooks', 'hooks.json'), 'utf8')).hooks
   const re = new RegExp(`^(?:${hooks.PostToolUse[0].matcher})$`)
-  for (const t of ['Bash', 'Edit', 'Write', 'MultiEdit', 'NotebookEdit', 'Task', 'Agent', 'mcp__fs__write_file']) assert.ok(re.test(t), t)
+  for (const t of ['Bash', 'PowerShell', 'Edit', 'Write', 'MultiEdit', 'NotebookEdit', 'Task', 'Agent', 'mcp__fs__write_file']) assert.ok(re.test(t), t)
   for (const t of ['Read', 'Grep', 'Glob', 'WebFetch']) assert.ok(!re.test(t), t) // a hook per read would slow every turn
 })

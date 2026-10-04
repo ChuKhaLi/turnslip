@@ -1,4 +1,5 @@
 import { join } from 'node:path'
+import { finishOpenTurn } from './hook.mjs'
 import { formatHistory, reportData } from './history.mjs'
 import { isTrackableRoot, projectDir } from './paths.mjs'
 import { readJson, writeJson } from './store.mjs'
@@ -29,6 +30,7 @@ export function run({ verb, args = [], home, root, pro }) {
       if (rest.length > 1) return 'usage: /turnslip:undo [n|id]' // `undo 2 3` must not quietly undo only 2
       if (rest.length && !pro) return 'Undoing an earlier turn is part of turnslip Pro.'
       if (!isTrackableRoot(root)) return NOT_TRACKED
+      finishOpenTurn(home, session, root)
       if (!rest.length) return undoLatest({ home, root, sessionId: session })
       const turn = findTurn(listHistory(projectDir(home, root)), rest[0])
       if (!turn) return `turnslip · no turn ${rest[0] || '""'} in this project · /turnslip:history lists them`
@@ -37,6 +39,7 @@ export function run({ verb, args = [], home, root, pro }) {
     case 'history': {
       if (!pro) return 'History is part of turnslip Pro.'
       if (!isTrackableRoot(root)) return NOT_TRACKED
+      finishOpenTurn(home, session, root) // so its numbers match what undo n will see
       const ids = rest.includes('--ids')
       const nums = rest.filter((a) => a !== '--ids')
       if (nums.length > 1 || (nums.length && !/^[1-9]\d*$/.test(nums[0]))) return 'usage: /turnslip:history [n] [--ids]'

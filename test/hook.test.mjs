@@ -226,3 +226,13 @@ test('SessionEnd, run as the hook process, finishes an open turn and prints noth
   const turns = readdirSync(join(pdir, 'turns')).map((id) => JSON.parse(readFileSync(join(pdir, 'turns', id, 'turn.json'), 'utf8')))
   assert.deepEqual(turns.map((t) => [t.finished, t.interrupted, t.changes.map((c) => c.path)]), [[true, true, ['a.txt']]])
 })
+
+// Claude Code 2.1.288 on Windows runs shell commands with a PowerShell tool (captured, release item 4).
+test('a PowerShell command is recorded like a Bash one and read by the command rules', () => {
+  const p = indexed({ 'a.txt': 'a\n' })
+  runHook(hookInput('UserPromptSubmit', p.root), p.home)
+  writeFileSync(join(p.root, 'b.txt'), 'b\n')
+  runHook(hookInput('PostToolUse', p.root, { tool_name: 'PowerShell', tool_input: { command: 'npm install left-pad', description: 'x' }, tool_response: {} }), p.home)
+  const stop = runHook(hookInput('Stop', p.root, { last_assistant_message: '<receipt>Installed | files: b.txt</receipt>' }), p.home)
+  assert.equal(stop.json.systemMessage, 'turnslip · Installed · 1 file · 📦 packages changed · /turnslip:undo')
+})

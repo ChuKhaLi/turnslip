@@ -2,7 +2,7 @@
   "hooks": {
     "SessionStart": [{ "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/lib/hook.mjs\" 2>/dev/null; exit 0", "timeout": 5 }] }],
     "UserPromptSubmit": [{ "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/lib/hook.mjs\" 2>/dev/null; exit 0", "timeout": 5 }] }],
-    "PostToolUse": [{ "matcher": "Bash|Edit|Write|MultiEdit|NotebookEdit|Task|Agent|mcp__.*", "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/lib/hook.mjs\" 2>/dev/null; exit 0", "timeout": 5 }] }],
+    "PostToolUse": [{ "matcher": "Bash|PowerShell|Edit|Write|MultiEdit|NotebookEdit|Task|Agent|mcp__.*", "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/lib/hook.mjs\" 2>/dev/null; exit 0", "timeout": 5 }] }],
     "Stop": [{ "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/lib/hook.mjs\" 2>/dev/null; exit 0", "timeout": 15 }] }],
     "SessionEnd": [{ "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/lib/hook.mjs\" 2>/dev/null; exit 0", "timeout": 5 }] }]
   }

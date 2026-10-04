@@ -15,6 +15,8 @@ import { appendEvent, clearCurrent, deleteTurn, gcBlobs, getCurrent, loadTurn, n
 export const START_BUDGET_MS = 500
 export const END_BUDGET_MS = 8000
 const HERE = dirname(fileURLToPath(import.meta.url))
+// Claude Code on Windows runs shell commands with a PowerShell tool (captured on 2.1.288).
+const SHELL_TOOLS = new Set(['Bash', 'PowerShell'])
 
 // The lock is created with flag wx, so two prompts arriving together cannot both take it. A lock
 // older than 10 minutes belonged to a walk that died; it is removed and taken once more.
@@ -110,7 +112,7 @@ export function onPostToolUse({ home, input }) {
   const tool = input.tool_name
   const ti = input.tool_input ?? {}
   const tr = input.tool_response ?? {}
-  if (tool === 'Bash') {
+  if (SHELL_TOOLS.has(tool)) {
     appendEvent(pdir, ptr.id, { tool, at: Date.now(), command: String(ti.command ?? '') })
     return null
   }
@@ -195,7 +197,7 @@ function finishTurn({ home, pdir, turn, message, endManifest, interrupted = fals
   const toolPaths = new Set(events.filter((e) => e.path).map((e) => e.path))
   const blob = (h) => (h ? getBlob(home, h) : null)
   const rich = changes.map((c) => ({ ...c, source: toolPaths.has(c.path) ? 'tool' : 'shell', ...lineStats(blob(c.before), blob(c.after)), ...(c.unknownBefore && { plus: null, minus: null, added: [] }) }))
-  const commands = events.filter((e) => e.tool === 'Bash').map((e) => e.command)
+  const commands = events.filter((e) => SHELL_TOOLS.has(e.tool)).map((e) => e.command)
   const flags = evaluateRules({ changes: rich, commands, root })
   for (const e of events) if (e.outside) flags.push({ kind: 'outside', path: e.outside })
   const receipt = parseReceipt(message)
@@ -228,6 +230,26 @@ function finishInterrupted(home, sessionId, root, manifest) {
   } catch (e) {
     logError(home, 'UserPromptSubmit', e) // the new turn starts regardless
   }
+}
+
+// Esc fires no Stop, and a slash command's ! line runs before the next prompt's hook would finish
+// the interrupted turn (captured, release item 7). So undo and history finish it first, with an end
+// snapshot taken now. An open turn with no tool event is left alone: it may be the very prompt
+// running the command, and an interrupted one with none has nothing in it to undo.
+export function finishOpenTurn(home, sessionId, root, budgetMs = END_BUDGET_MS) {
+  if (!sessionId) return
+  const ptr = getCurrent(home, sessionId)
+  if (!ptr) return
+  const pdir = projectDir(home, ptr.root)
+  const turn = loadTurn(pdir, ptr.id)
+  if (!turn || turn.finished || !readEvents(pdir, turn.id).length) return
+  const sameRoot = normalizeAbs(resolve(ptr.root)) === normalizeAbs(resolve(root))
+  finishTurn({ home, pdir, turn, message: undefined, interrupted: true, endManifest: () => {
+    if (!sameRoot) return null
+    const snap = snapshot({ home, root: turn.root, index: readJson(join(pdir, 'index.json'), {}), deadline: performance.now() + budgetMs })
+    if (snap) writeJson(join(pdir, 'index.json'), snap.index)
+    return snap?.manifest ?? null
+  } })
 }
 
 // Another plugin's Stop hook can block, and Claude then carries on in the same turn until Stop fires
