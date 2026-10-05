@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>How to undo Claude Code changes: /rewind, git and turnslip</title>
+  <meta name="description" content="Undo what Claude Code did to your files: what /rewind restores and misses (shell commands), when git helps, and /turnslip:undo, which tracks shell changes too.">
+  <link rel="canonical" href="https://turnslip.dev/guides/undo-claude-code-changes">
+  <meta name="theme-color" content="#F9FAFB" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#17181C" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="preload" href="/fonts/plex-sans-latin-wght.v530.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/plex-mono-latin-400.v530.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/style.v2.css">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="turnslip">
+  <meta property="og:url" content="https://turnslip.dev/guides/undo-claude-code-changes">
+  <meta property="og:title" content="How to undo Claude Code changes">
+  <meta property="og:description" content="What /rewind restores and misses, when git helps, and an undo that tracks shell commands too.">
+  <meta property="og:image" content="https://turnslip.dev/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "How to undo Claude Code changes",
+    "description": "What Claude Code's /rewind restores and misses, when git helps, and /turnslip:undo, which tracks shell changes too.",
+    "url": "https://turnslip.dev/guides/undo-claude-code-changes",
+    "datePublished": "2026-10-05",
+    "dateModified": "2026-10-05",
+    "author": { "@type": "Person", "name": "ChuKhaLi", "url": "https://github.com/ChuKhaLi" },
+    "about": { "@type": "SoftwareApplication", "name": "Claude Code" }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "turnslip", "item": "https://turnslip.dev/" },
+      { "@type": "ListItem", "position": 2, "name": "How to undo Claude Code changes", "item": "https://turnslip.dev/guides/undo-claude-code-changes" }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <!--email_off-->
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site">
+    <a class="brand" href="/"><svg class="mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path d="M8 7v17h3" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><rect x="15" y="21.5" width="11" height="5" rx="2.5" fill="currentColor"/></svg>turnslip</a>
+    <nav aria-label="Site">
+      <a href="/#how">How it works</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/#install">Install</a>
+      <a href="https://github.com/ChuKhaLi/turnslip">GitHub</a>
+    </nav>
+  </header>
+
+  <main id="main" class="legal">
+    <h1>How to undo Claude Code changes</h1>
+    <p class="fine">Last updated: 5 October 2026</p>
+    <p>Claude Code changed something you did not want: a file rewritten, a file deleted by <code>rm</code>, a dependency installed. There are three ways back, and each one restores different things. This page says what each one covers, so you can pick the right one before you need it.</p>
+
+    <h2>1. Claude Code's own rewind</h2>
+    <p>Claude Code keeps a checkpoint before each prompt that starts a turn. Run <code>/rewind</code>, or press <code>Esc</code> twice when the prompt input is empty, pick a message, then choose to restore the code, the conversation, or both.</p>
+    <p>What it covers, from <a href="https://code.claude.com/docs/en/checkpointing">Claude Code's checkpointing documentation</a>:</p>
+    <ul>
+      <li>Edits made with Claude's file editing tools in the current session.</li>
+      <li>Snapshots for the 100 most recent checkpoints in a session; they are deleted about 30 days after the session last saved one.</li>
+      <li>Checkpoints are saved with the conversation, so <code>/rewind</code> still works after you resume a session.</li>
+    </ul>
+    <p>What it does not cover, in the documentation's words: "Checkpointing does not track files modified by Bash commands." So a file Claude removed with <code>rm</code>, moved with <code>mv</code>, or changed through <code>npm install</code> or a script does not come back. Edits by most subagents, changes made outside Claude Code and symlinked files are not restored either. The documentation's own advice: checkpoints are "Not a replacement for version control."</p>
+
+    <h2>2. git</h2>
+    <p>If you committed before you asked Claude for something, git can take everything back: <code>git restore .</code> for changed files, <code>git clean</code> for new ones (look with <code>git clean -n</code> first). <code>git stash</code> keeps your own uncommitted work out of the way while you do it.</p>
+    <p>Its limits:</p>
+    <ul>
+      <li>It only knows what you committed. Work since the last commit, yours or Claude's, is not in it.</li>
+      <li>Plain <code>git stash</code> leaves out untracked files (<code>-u</code> adds them) and files your <code>.gitignore</code> excludes, such as <code>.env</code> (<code>-a</code> adds those).</li>
+      <li>Claude can run git too. A <code>git checkout -- .</code> or <code>git reset --hard</code> in a turn throws away uncommitted work, and git cannot give it back.</li>
+    </ul>
+
+    <h2>3. turnslip</h2>
+    <p><a href="/">turnslip</a> is a Claude Code plugin. It snapshots the project at the start and at the end of every turn and compares the two, so a file changed by a shell command counts as much as one Claude edited. One line under each reply says what changed; <code>/turnslip:undo</code> takes the last turn back.</p>
+    <ul>
+      <li>It restores every file the turn changed or deleted, and removes the files it created, including those a command like <code>rm</code>, <code>mv</code> or <code>npm install</code> touched.</li>
+      <li>It never overwrites a file you changed since the turn: that file is kept and named.</li>
+      <li>The undo is a turn of its own, so it can be undone too. With Pro, <code>/turnslip:undo 3</code> takes back an earlier turn.</li>
+    </ul>
+    <p>Its limits, said plainly:</p>
+    <ul>
+      <li>Paths your <code>.gitignore</code> excludes are never read, so they are never restored. A <code>.env</code> Claude deleted stays deleted.</li>
+      <li>A write outside the project folder is flagged, not restored.</li>
+      <li>A database migration, a <code>git push</code>, a deploy or a global install is listed as not undone; no file undo can take those back.</li>
+      <li>On the first turns in a new or very large project, before its index is built, a turn can run in light mode: Claude's own edits stay undoable, but shell changes are not tracked yet, and the slip says so.</li>
+      <li>Files over 5 MB are not kept, and each project keeps its last 50 turns.</li>
+    </ul>
+
+    <h2>Which one to use</h2>
+    <p>Commit before a big request, whatever else you use. For a quick step back in the same session, <code>/rewind</code> also rewinds the conversation. When Claude runs commands, and you want to see what changed before you decide, turnslip covers the shell changes the other two can miss. They work side by side.</p>
+    <p>Related: <a href="/guides/what-did-claude-code-change">What did Claude Code just change?</a> · <a href="/#install">Install turnslip, free</a></p>
+  </main>
+
+  <footer class="site">
+    <p>turnslip, by ChuKhaLi. Support: <a href="mailto:support@turnslip.dev">support@turnslip.dev</a></p>
+    <nav aria-label="Guides">
+      <a href="/guides/undo-claude-code-changes">How to undo Claude Code changes</a>
+      <a href="/guides/what-did-claude-code-change">What did Claude Code change?</a>
+    </nav>
+    <nav aria-label="Legal">
+      <a href="/terms">Terms</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/refunds">Refunds</a>
+      <a href="https://github.com/ChuKhaLi/turnslip">GitHub</a>
+    </nav>
+    <p class="fine">© 2026 ChuKhaLi</p>
+  </footer>
+  <!--/email_off-->
+</body>
+</html>

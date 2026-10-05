@@ -129,8 +129,9 @@ test('the JSON-LD offer matches the launch price', () => {
   assert.ok(m, 'no JSON-LD')
   const ld = JSON.parse(m[1])
   assert.equal(ld['@type'], 'SoftwareApplication')
-  assert.equal(ld.offers.price, '19')
-  assert.equal(ld.offers.priceCurrency, 'USD')
+  const pro = ld.offers.find((o) => o.name === 'turnslip Pro') // the free core is an offer of its own (test/seo.test.mjs)
+  assert.equal(pro.price, '19')
+  assert.equal(pro.priceCurrency, 'USD')
 })
 
 test('no page carries a style attribute', () => {
@@ -160,7 +161,9 @@ test('every page has the support address and the legal links in its footer', () 
 })
 
 const CANON = { 'index.html': 'https://turnslip.dev/', 'terms.html': 'https://turnslip.dev/terms',
-  'privacy.html': 'https://turnslip.dev/privacy', 'refunds.html': 'https://turnslip.dev/refunds' }
+  'privacy.html': 'https://turnslip.dev/privacy', 'refunds.html': 'https://turnslip.dev/refunds',
+  'guides/undo-claude-code-changes.html': 'https://turnslip.dev/guides/undo-claude-code-changes',
+  'guides/what-did-claude-code-change.html': 'https://turnslip.dev/guides/what-did-claude-code-change' }
 
 test('every page has a complete head and exactly one h1', () => {
   const titles = new Set()

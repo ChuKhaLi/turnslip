@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>turnslip: know what Claude just did</title>
-  <meta name="description" content="A Claude Code plugin that prints one line after every turn: what changed on disk, what looks risky, and a one-command undo.">
+  <title>turnslip: see and undo what Claude Code changed</title>
+  <meta name="description" content="A Claude Code plugin that shows what each turn really changed on disk, shell commands included, flags risky changes, and has a one-command undo. Free core.">
   <link rel="canonical" href="https://turnslip.dev/">
   <meta name="theme-color" content="#F9FAFB" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#17181C" media="(prefers-color-scheme: dark)">
@@ -14,13 +14,20 @@
   <link rel="preload" href="/fonts/plex-mono-latin-400.v530.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/style.v2.css">
   <meta property="og:type" content="website">
+  <meta property="og:site_name" content="turnslip">
+  <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://turnslip.dev/">
-  <meta property="og:title" content="turnslip: know what Claude just did">
+  <meta property="og:title" content="turnslip: see and undo what Claude Code changed">
   <meta property="og:description" content="One line after every Claude Code turn: what changed on disk, what looks risky, and a one-command undo.">
   <meta property="og:image" content="https://turnslip.dev/og.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="A Claude Code reply with the turnslip slip under it: Added a login page, 2 files, key added in config.js, and the undo command.">
   <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="turnslip: see and undo what Claude Code changed">
+  <meta name="twitter:description" content="One line after every Claude Code turn: what changed on disk, what looks risky, and a one-command undo.">
+  <meta name="twitter:image" content="https://turnslip.dev/og.png">
+  <meta name="twitter:image:alt" content="A Claude Code reply with the turnslip slip under it: Added a login page, 2 files, key added in config.js, and the undo command.">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -30,7 +37,13 @@
     "url": "https://turnslip.dev/",
     "applicationCategory": "DeveloperApplication",
     "operatingSystem": "Windows, macOS, Linux",
-    "offers": { "@type": "Offer", "price": "19", "priceCurrency": "USD" },
+    "softwareRequirements": "Claude Code 2.1.289 or later, Node.js 18 or later",
+    "license": "https://github.com/ChuKhaLi/turnslip/blob/main/LICENSE.md",
+    "sameAs": ["https://github.com/ChuKhaLi/turnslip"],
+    "offers": [
+      { "@type": "Offer", "name": "turnslip", "price": "0", "priceCurrency": "USD", "url": "https://turnslip.dev/#install", "availability": "https://schema.org/InStock" },
+      { "@type": "Offer", "name": "turnslip Pro", "price": "19", "priceCurrency": "USD", "priceValidUntil": "2026-11-05", "url": "https://turnslip.dev/#pricing", "availability": "https://schema.org/InStock" }
+    ],
     "author": { "@type": "Person", "name": "ChuKhaLi", "url": "https://github.com/ChuKhaLi" }
   }
   </script>
@@ -75,10 +88,10 @@
     <section class="catches" aria-labelledby="catches-title">
       <h2 id="catches-title">What it catches</h2>
       <ul>
-        <li><h3>Shell changes</h3><p>Files a command created, changed or deleted count too, not only Claude's edits. <code>npm install</code> shows up as packages changed.</p></li>
+        <li><h3>Shell changes</h3><p>Files a command created, changed or deleted count too, not only Claude's edits. <code>npm install</code> shows up as packages changed. <a href="/guides/what-did-claude-code-change">What did Claude Code change?</a></p></li>
         <li><h3>Risky changes</h3><p>🔑 a key written to a file your .gitignore doesn't exclude, or a new <code>.env</code>, 🗑 deletions, 🗄 migrations, 📦 dependencies, 🚀 pushes and deploys, ⚠ writes outside the project.</p></li>
         <li><h3>What went unsaid</h3><p>When a file changed but Claude's reply did not mention it, the slip says <code>not mentioned: config.js</code>.</p></li>
-        <li><h3>One-command undo</h3><p><code>/turnslip:undo</code> puts the last turn's files back and keeps any file you changed since.</p></li>
+        <li><h3>One-command undo</h3><p><code>/turnslip:undo</code> puts the last turn's files back and keeps any file you changed since. <a href="/guides/undo-claude-code-changes">How it compares with /rewind and git</a></p></li>
       </ul>
     </section>
 
@@ -138,6 +151,8 @@
       <p>Yes, within 14 days, no questions asked. <a href="/refunds">Refunds</a></p>
       <h3>Where is the source?</h3>
       <p>On <a href="https://github.com/ChuKhaLi/turnslip">GitHub</a>, under FSL-1.1-MIT: read it, change it, use it; each version becomes MIT after two years.</p>
+      <h3>How is this different from Claude Code's /rewind?</h3>
+      <p><code>/rewind</code> restores the edits Claude made with its file tools; it does not track files changed by shell commands. turnslip snapshots the project before and after each turn, so a file a command deleted or rewrote comes back too. They work side by side. <a href="/guides/undo-claude-code-changes">How to undo Claude Code changes</a></p>
       <h3>Which tools does it work with?</h3>
       <p>Claude Code, in the terminal and in VS Code.</p>
     </section>
@@ -145,6 +160,10 @@
 
   <footer class="site">
     <p>turnslip, by ChuKhaLi. Support: <a href="mailto:support@turnslip.dev">support@turnslip.dev</a></p>
+    <nav aria-label="Guides">
+      <a href="/guides/undo-claude-code-changes">How to undo Claude Code changes</a>
+      <a href="/guides/what-did-claude-code-change">What did Claude Code change?</a>
+    </nav>
     <nav aria-label="Legal">
       <a href="/terms">Terms</a>
       <a href="/privacy">Privacy</a>

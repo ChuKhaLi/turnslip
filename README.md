@@ -35,6 +35,13 @@ failed. Undo restores files only; a database migration or a `git push` stays don
 
 Data lives in `~/.turnslip/` (the last 50 turns per project).
 
+## Guides
+
+- [How to undo Claude Code changes](https://turnslip.dev/guides/undo-claude-code-changes): what `/rewind` restores
+  and misses, when git helps, and `/turnslip:undo`.
+- [What did Claude Code just change?](https://turnslip.dev/guides/what-did-claude-code-change): tool calls, git,
+  and the per-turn slip.
+
 ## License
 
 [FSL-1.1-MIT](LICENSE.md): read it, change it, use it for yourself or your company; do not build a

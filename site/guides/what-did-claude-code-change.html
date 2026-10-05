@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>What did Claude Code change? See every file, per turn</title>
+  <meta name="description" content="Find out which files Claude Code created, changed or deleted in a turn, shell commands included, and where its summary left something out.">
+  <link rel="canonical" href="https://turnslip.dev/guides/what-did-claude-code-change">
+  <meta name="theme-color" content="#F9FAFB" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#17181C" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="preload" href="/fonts/plex-sans-latin-wght.v530.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/plex-mono-latin-400.v530.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/style.v2.css">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="turnslip">
+  <meta property="og:url" content="https://turnslip.dev/guides/what-did-claude-code-change">
+  <meta property="og:title" content="What did Claude Code just change?">
+  <meta property="og:description" content="Every file a Claude Code turn created, changed or deleted, shell commands included, and what its summary left out.">
+  <meta property="og:image" content="https://turnslip.dev/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "What did Claude Code just change?",
+    "description": "How to see every file a Claude Code turn created, changed or deleted, shell commands included, and what its summary left out.",
+    "url": "https://turnslip.dev/guides/what-did-claude-code-change",
+    "datePublished": "2026-10-05",
+    "dateModified": "2026-10-05",
+    "author": { "@type": "Person", "name": "ChuKhaLi", "url": "https://github.com/ChuKhaLi" },
+    "about": { "@type": "SoftwareApplication", "name": "Claude Code" }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "turnslip", "item": "https://turnslip.dev/" },
+      { "@type": "ListItem", "position": 2, "name": "What did Claude Code just change?", "item": "https://turnslip.dev/guides/what-did-claude-code-change" }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <!--email_off-->
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site">
+    <a class="brand" href="/"><svg class="mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path d="M8 7v17h3" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><rect x="15" y="21.5" width="11" height="5" rx="2.5" fill="currentColor"/></svg>turnslip</a>
+    <nav aria-label="Site">
+      <a href="/#how">How it works</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/#install">Install</a>
+      <a href="https://github.com/ChuKhaLi/turnslip">GitHub</a>
+    </nav>
+  </header>
+
+  <main id="main" class="legal">
+    <h1>What did Claude Code just change?</h1>
+    <p class="fine">Last updated: 5 October 2026</p>
+    <p>At the end of a turn Claude Code tells you what it did. That reply is a summary, written by the model. The files on disk are the record, and the two do not always match: a file the reply never mentions, a key written into a config file, a deletion inside a shell command. Here are the ways to see what really changed.</p>
+
+    <h2>Read the tool calls</h2>
+    <p>Every edit Claude makes with its file tools shows in the conversation as an <code>Update</code> or <code>Write</code> line, and every shell command as a <code>Bash</code> line; expand them to see the details. This covers what Claude did through its tools. It does not tell you which files a command such as <code>npm install</code> or a build script changed, and in a long turn the lines scroll past.</p>
+
+    <h2>Ask git</h2>
+    <p><code>git status</code> lists the changed and new files, and <code>git diff</code> shows the changes. It sees what Claude's tools and its shell commands did alike. Its limits: it compares with your last commit, so several turns and your own edits run together; it hides files your <code>.gitignore</code> excludes, such as a new key in <code>.env</code>; and it shows nothing in a folder that is not a git repository.</p>
+
+    <h2>A slip after every turn</h2>
+    <p><a href="/">turnslip</a> is a Claude Code plugin that snapshots the project when a turn starts and when it ends, and prints the difference as one line under Claude's reply, after <code>Stop says:</code>:</p>
+    <pre class="cmd"><code>turnslip · Added a login page · 2 files · 🔑 key added in config.js · /turnslip:undo</code></pre>
+    <ul>
+      <li><strong>Per turn:</strong> only this turn's changes, shell commands included, so <code>npm install</code> shows up as packages changed.</li>
+      <li><strong>What went unsaid:</strong> Claude ends its reply with a short receipt of the files it changed, which the screen hides. A file that changed but is missing from it shows as <code>not mentioned: config.js</code>; a file it lists that did not change shows as <code>said but not changed: …</code>.</li>
+      <li><strong>Risky changes:</strong> 🔑 a key written to a file your <code>.gitignore</code> doesn't exclude, or a new <code>.env</code>, 🗑 deletions, 🗄 migrations, 📦 dependencies, 🚀 pushes and deploys, ⚠ writes outside the project.</li>
+      <li><strong>Afterwards:</strong> <code>/turnslip:undo</code> takes the turn back. With Pro, <code>/turnslip:history</code> lists the recent turns of the project and <code>/turnslip:report</code> sums up the session.</li>
+    </ul>
+    <p>Like git, turnslip never reads what your <code>.gitignore</code> excludes, and nothing it records leaves your machine.</p>
+    <p>Related: <a href="/guides/undo-claude-code-changes">How to undo Claude Code changes</a> · <a href="/#install">Install turnslip, free</a></p>
+  </main>
+
+  <footer class="site">
+    <p>turnslip, by ChuKhaLi. Support: <a href="mailto:support@turnslip.dev">support@turnslip.dev</a></p>
+    <nav aria-label="Guides">
+      <a href="/guides/undo-claude-code-changes">How to undo Claude Code changes</a>
+      <a href="/guides/what-did-claude-code-change">What did Claude Code change?</a>
+    </nav>
+    <nav aria-label="Legal">
+      <a href="/terms">Terms</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/refunds">Refunds</a>
+      <a href="https://github.com/ChuKhaLi/turnslip">GitHub</a>
+    </nav>
+    <p class="fine">© 2026 ChuKhaLi</p>
+  </footer>
+  <!--/email_off-->
+</body>
+</html>

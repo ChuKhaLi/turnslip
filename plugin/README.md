@@ -20,6 +20,13 @@ Site and Pro: https://turnslip.dev
 The core (the slip, the risk flags, undo of the last turn) is free. Pro is a one-time purchase with a
 license key that works on up to 3 machines. Try history, undo of an earlier turn and the session report free, 3 runs in all, before you buy.
 
+## Guides
+
+- [How to undo Claude Code changes](https://turnslip.dev/guides/undo-claude-code-changes): what `/rewind` restores
+  and misses, when git helps, and `/turnslip:undo`.
+- [What did Claude Code just change?](https://turnslip.dev/guides/what-did-claude-code-change): tool calls, git,
+  and the per-turn slip.
+
 ## What it runs
 
 Hooks on SessionStart, UserPromptSubmit, PostToolUse, Stop, MessageDisplay and SessionEnd run
