@@ -18,6 +18,8 @@ Needs Claude Code 2.1.289 or newer and Node.js 18 or newer. `/turnslip:setup` ch
 - `/turnslip:history [n]` (Pro): the recent turns of this project, numbered for undo.
 - `/turnslip:report` (Pro): a report of this session, as a claude.ai artifact where your plan has them.
 - `/turnslip:mode simple|detailed` (detailed is Pro), `/turnslip:setup`.
+- `/turnslip:buy` opens the Pro checkout in your browser; `/turnslip:activate <key>` turns Pro on with your
+  license key; `/turnslip:deactivate` frees the seat.
 
 ## What it flags
 

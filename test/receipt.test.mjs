@@ -75,3 +75,27 @@ test('on win32 the ignore check sees the claim in its own case (minor)', () => {
   const r = compareClaims({ changes: [], files: ['Secrets.txt'], root: 'C:\\p', isTracked, platform: 'win32' })
   assert.deepEqual(r.claimedUnchanged, [])
 })
+
+// Captured 2026-10-04 (release run, Opus 5.5): a remark in parentheses held a comma, and its tail
+// "not checked)" was reported as a file Claude said it changed. A remark is not a path.
+test('a remark in parentheses is not a file, even with a comma inside', () => {
+  const text = '<receipt>Ran npm install | files: package.json, package-lock.json, node_modules/left-pad (npm-managed, not checked)</receipt>'
+  assert.deepEqual(parseReceipt(text).files, ['package.json', 'package-lock.json', 'node_modules/left-pad'])
+  assert.deepEqual(parseReceipt('<receipt>a | files: src/a.ts (new), src/b.ts</receipt>').files, ['src/a.ts', 'src/b.ts'])
+})
+
+test('parentheses that are part of a file name stay', () => {
+  assert.deepEqual(parseReceipt('<receipt>a | files: docs/report (1).md, notes (2), x</receipt>').files, ['docs/report (1).md', 'notes (2)', 'x'])
+})
+
+test('a claim with an unclosed parenthesis is dropped, never reported', () => {
+  assert.deepEqual(parseReceipt('<receipt>a | files: a.js, b.js (and others</receipt>').files, ['a.js'])
+  assert.deepEqual(parseReceipt('<receipt>a | files: a.js, maybe more)</receipt>').files, ['a.js'])
+  assert.deepEqual(parseReceipt('<receipt>a | files: more), a.js</receipt>').files, ['a.js'])
+})
+
+test('the captured receipt reports nothing Claude did not claim', () => {
+  const { files } = parseReceipt('<receipt>x | files: package.json, package-lock.json, node_modules/left-pad (npm-managed, not checked)</receipt>')
+  const r = compareClaims({ changes: [{ path: 'package.json' }, { path: 'package-lock.json' }], files, root: '/p', isTracked: (p) => !p.startsWith('node_modules'), platform: 'linux' })
+  assert.deepEqual(r, { unmentioned: [], claimedUnchanged: [] })
+})

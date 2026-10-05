@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Thank you · turnslip</title>
+  <meta name="description" content="Your turnslip Pro license key is on its way by email. Activate it in Claude Code.">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#F9FAFB" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#17181C" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="preload" href="/fonts/plex-sans-latin-wght.v530.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/plex-mono-latin-400.v530.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/style.v2.css">
+</head>
+<body>
+  <!--email_off-->
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site">
+    <a class="brand" href="/"><svg class="mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path d="M8 7v17h3" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><rect x="15" y="21.5" width="11" height="5" rx="2.5" fill="currentColor"/></svg>turnslip</a>
+    <nav aria-label="Site">
+      <a href="/#how">How it works</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/#install">Install</a>
+      <a href="https://github.com/ChuKhaLi/turnslip">GitHub</a>
+    </nav>
+  </header>
+
+  <main id="main" class="legal">
+    <h1>Thank you for buying turnslip Pro</h1>
+    <p>Dodo Payments is emailing your receipt and your license key to <span id="email">the address you paid with</span>. It usually arrives within a few minutes; if it does not, look in your spam folder.</p>
+    <h2>Activate Pro</h2>
+    <p>In Claude Code, run:</p>
+    <pre class="cmd"><code id="activate">/turnslip:activate &lt;key&gt;</code></pre>
+    <p><button type="button" id="copy" class="btn btn-secondary" hidden>Copy</button></p>
+    <p id="paste">Paste the key from the email in place of <code>&lt;key&gt;</code>.</p>
+    <p>One key works on up to 3 machines; free one with <code>/turnslip:deactivate</code>.</p>
+    <p>Not installed yet? Follow the <a href="/#install">install steps</a> first.</p>
+    <h2>Something wrong?</h2>
+    <p>No email after an hour, or the key does not activate: write to <a href="mailto:support@turnslip.dev">support@turnslip.dev</a> with the address you paid with. Not what you wanted: you can get a full refund within 14 days, see <a href="/refunds">Refunds</a>.</p>
+  </main>
+
+  <footer class="site">
+    <p>turnslip, by ChuKhaLi. Support: <a href="mailto:support@turnslip.dev">support@turnslip.dev</a></p>
+    <nav aria-label="Legal">
+      <a href="/terms">Terms</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/refunds">Refunds</a>
+      <a href="https://github.com/ChuKhaLi/turnslip">GitHub</a>
+    </nav>
+    <p class="fine">© 2026 ChuKhaLi</p>
+  </footer>
+  <!--/email_off-->
+  <script type="module" src="/thanks.js"></script>
+</body>
+</html>

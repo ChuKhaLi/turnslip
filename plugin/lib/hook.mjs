@@ -1,15 +1,17 @@
 import { spawn } from 'node:child_process'
-import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { diffManifests, lineStats } from './diff.mjs'
 import { makeIsTracked } from './gitignore.mjs'
-import { isPro } from './license.mjs'
+import { isPro, needsCheck, readLicense } from './license.mjs'
+import { logError } from './log.mjs'
+import { promoLine } from './promo.mjs'
 import { isTrackableRoot, normalizeAbs, projectDir, toRel, turnslipHome } from './paths.mjs'
 import { RECEIPT_INSTRUCTION, compareClaims, parseReceipt } from './receipt.mjs'
 import { renderSlip } from './render.mjs'
 import { evaluateRules } from './rules.mjs'
-import { getBlob, putBlob, readJson, snapshot, writeJson } from './store.mjs'
+import { getBlob, putBlob, readJson, secureHome, snapshot, writeJson } from './store.mjs'
 import { appendEvent, clearCurrent, deleteTurn, gcBlobs, getCurrent, loadTurn, newTurnId, pruneTurns, readEvents, saveTurn, setCurrent } from './turns.mjs'
 
 export const START_BUDGET_MS = 500
@@ -38,6 +40,22 @@ export function startIndexer(home, root, { execPath = process.execPath } = {}) {
   // Unhandled, a failed spawn (no node at that path) would throw in the hook process.
   child.on('error', () => rmSync(lock, { force: true }))
   child.unref()
+}
+
+export function startLicenseCheck(home, { execPath = process.execPath, script = join(HERE, 'license-check.mjs'), now = Date.now() } = {}) {
+  if (!needsCheck(readLicense(home), now)) return false
+  mkdirSync(home, { recursive: true })
+  const lock = join(home, 'license.lock')
+  if (!takeLock(lock)) return false
+  try {
+    const child = spawn(execPath, [script, home], { detached: true, stdio: 'ignore', windowsHide: true })
+    child.on('error', () => rmSync(lock, { force: true }))
+    child.unref()
+  } catch (e) {
+    rmSync(lock, { force: true }) // a synchronous spawn failure must not hold the lock for 10 minutes
+    throw e
+  }
+  return true
 }
 
 // A prompt whose snapshot runs over budget asks for a background walk. A stale index (a branch
@@ -78,7 +96,8 @@ export function onSessionStart({ home, input }) {
   return null
 }
 
-export function onUserPromptSubmit({ home, input, budgetMs = START_BUDGET_MS }) {
+export function onUserPromptSubmit({ home, input, budgetMs = START_BUDGET_MS, startCheck = startLicenseCheck }) {
+  try { startCheck(home) } catch (e) { logError(home, 'license', e) } // never costs the turn
   const root = input.cwd
   if (!isTrackableRoot(root)) {
     // No turn starts here, but one left open by Esc in a tracked folder still ends now (light: no
@@ -270,7 +289,7 @@ function dropUnusedContinuation(pdir, turn) {
   return true
 }
 
-export function onStop({ home, input }) {
+export function onStop({ home, input, ids }) {
   const ptr = getCurrent(home, input.session_id)
   if (!ptr) return null
   const pdir = projectDir(home, ptr.root)
@@ -285,9 +304,12 @@ export function onStop({ home, input }) {
     return end
   } })
   openContinuation(home, input.session_id, turn, end)
-  const mode = readJson(join(home, 'config.json'), {})?.mode === 'detailed' && isPro(home) ? 'detailed' : 'simple'
+  const pro = isPro(home)
+  const mode = readJson(join(home, 'config.json'), {})?.mode === 'detailed' && pro ? 'detailed' : 'simple'
   const text = renderSlip(slip, mode)
-  return text ? { systemMessage: text } : null
+  if (!text) return null
+  const promo = slip.flags.length ? promoLine(home, { pro, ids }) : '' // line 1 carries everything that matters (spec §7)
+  return { systemMessage: promo ? `${text}\n${promo}` : text }
 }
 
 // /exit or Ctrl+C mid-turn fires no Stop, and no next prompt will come: the open turn ends here, or it
@@ -313,21 +335,13 @@ export function onSessionEnd({ home, input, budgetMs = SESSION_END_BUDGET_MS }) 
 
 const HANDLERS = { SessionStart: onSessionStart, UserPromptSubmit: onUserPromptSubmit, PostToolUse: onPostToolUse, Stop: onStop, SessionEnd: onSessionEnd }
 
-function logError(home, event, e) {
-  try {
-    mkdirSync(home, { recursive: true })
-    const p = join(home, 'log')
-    if (existsSync(p) && statSync(p).size > 1_000_000) writeFileSync(p, '')
-    appendFileSync(p, `${new Date().toISOString()} ${event} ${e?.stack ?? e}\n`)
-  } catch {}
-}
-
 export function main() {
   let input = {}
   try { input = JSON.parse(readFileSync(0, 'utf8')) } catch {}
   const home = turnslipHome()
   const handler = HANDLERS[input?.hook_event_name]
   if (!handler || typeof input.cwd !== 'string' || !existsSync(input.cwd)) return
+  secureHome(home)
   try {
     const out = handler({ home, input })
     if (out) process.stdout.write(JSON.stringify(out))

@@ -31,10 +31,25 @@ export function parseReceipt(text) {
   const sentence = (at < 0 ? last : last.slice(0, at)).trim()
   if (at < 0) return { sentence, files: null }
   const raw = last.slice(at + '| files:'.length).trim()
-  const files = /^none\.?$/i.test(raw)
-    ? []
-    : raw.split(',').map((s) => s.trim().replace(/^[`'"]|[`'"]$/g, '')).filter(Boolean)
+  const files = /^none\.?$/i.test(raw) ? [] : claims(raw)
   return { sentence, files }
+}
+
+// Splits on commas outside parentheses, drops a trailing remark (" (new)", " (not checked)") but keeps
+// a name's own number (" (1)"), and drops a claim left with an unmatched parenthesis: a remark taken
+// for a path would report a file Claude never named.
+function claims(raw) {
+  const parts = []
+  let depth = 0, cur = ''
+  for (const ch of raw) {
+    if (ch === '(') depth++
+    else if (ch === ')') depth = Math.max(0, depth - 1)
+    if (ch === ',' && depth === 0) { parts.push(cur); cur = '' } else cur += ch
+  }
+  parts.push(cur)
+  return parts
+    .map((s) => s.trim().replace(/\s+\((?!\d+\))[^()]*\)$/, '').trim().replace(/^[`'"]|[`'"]$/g, ''))
+    .filter((s) => s && (s.match(/\(/g) ?? []).length === (s.match(/\)/g) ?? []).length)
 }
 
 function norm(p, root, platform) {

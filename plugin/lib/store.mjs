@@ -1,9 +1,22 @@
 import { createHash } from 'node:crypto'
-import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { loadIgnore } from './gitignore.mjs'
 
 export const MAX_FILE_BYTES = 5 * 1024 * 1024
+
+// ~/.turnslip holds the license key and snapshots of the user's files (.env included): on Unix only
+// its owner may enter it. Windows guards it with the user profile's ACLs; modes mean nothing there.
+// Never throws: a hook must not fail over it.
+export function secureHome(home, { platform = process.platform, fs = { mkdirSync, statSync, chmodSync } } = {}) {
+  try {
+    fs.mkdirSync(home, { recursive: true, mode: 0o700 })
+    if (platform !== 'win32' && fs.statSync(home).mode & 0o077) fs.chmodSync(home, 0o700)
+    return true
+  } catch {
+    return false
+  }
+}
 
 export function hashBytes(buf) {
   return createHash('sha1').update(buf).digest('hex')
@@ -13,11 +26,22 @@ export function blobPath(home, hash) {
   return join(home, 'store', 'objects', hash.slice(0, 2), hash.slice(2))
 }
 
-export function writeAtomic(p, data) {
+// Windows refuses a rename for a moment when another process renames onto the same file (a hook and
+// the detached indexer both write index.json): EPERM, EACCES or EBUSY. Ten short retries, 55 ms at most;
+// a probe of two processes renaming 3,000 times each needed 3.
+const REFUSED = new Set(['EPERM', 'EACCES', 'EBUSY'])
+const sleepSync = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms)
+
+export function writeAtomic(p, data, { platform = process.platform, rename = renameSync, wait = sleepSync } = {}) {
   const tmp = `${p}.${process.pid}.${Date.now()}.tmp`
   try {
     writeFileSync(tmp, data)
-    renameSync(tmp, p)
+    for (let tries = 0; ; tries++) {
+      try { rename(tmp, p); break } catch (e) {
+        if (platform !== 'win32' || !REFUSED.has(e.code) || tries >= 10) throw e
+        wait(tries + 1)
+      }
+    }
   } catch (e) {
     rmSync(tmp, { force: true }) // a failed rename (a directory or a locked file in the way) leaves no orphan
     throw e

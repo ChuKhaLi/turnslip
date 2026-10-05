@@ -5,6 +5,8 @@ import { homedir, tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { projectDir } from '../plugin/lib/paths.mjs'
 import { MAX_FILE_BYTES, snapshot, writeJson } from '../plugin/lib/store.mjs'
+import { onPostToolUse, onStop, onUserPromptSubmit, startLicenseCheck } from '../plugin/lib/hook.mjs'
+import { PROMO } from '../plugin/lib/promo.mjs'
 import { hookInput, makeProject, runHook, tempDir } from './helpers.mjs'
 
 // A project whose index already exists, so turns run in full mode.
@@ -85,7 +87,9 @@ test('PostToolUse records Edit pre-images and Bash commands', () => {
   runHook(hookInput('PostToolUse', p.root, { tool_name: 'Edit', tool_input: { file_path: join(p.root, 'a.txt') }, tool_response: { filePath: join(p.root, 'a.txt'), originalFile: 'old\n' } }), p.home)
   runHook(hookInput('PostToolUse', p.root, { tool_name: 'Bash', tool_input: { command: 'git push' }, tool_response: { stdout: '' } }), p.home)
   const stop = runHook(hookInput('Stop', p.root, { last_assistant_message: '<receipt>Edited | files: a.txt</receipt>' }), p.home)
-  assert.equal(stop.json.systemMessage, 'turnslip · Edited · 1 file · 🚀 pushed or deployed · /turnslip:undo')
+  // Pro is on sale (the shipped ids are live): a flagged slip in a fresh home carries the prompt as line 2.
+  assert.equal(stop.json.systemMessage, `turnslip · Edited · 1 file · 🚀 pushed or deployed · /turnslip:undo
+${PROMO}`)
 })
 
 test('a corrupt store never breaks the hook', () => {
@@ -234,5 +238,83 @@ test('a PowerShell command is recorded like a Bash one and read by the command r
   writeFileSync(join(p.root, 'b.txt'), 'b\n')
   runHook(hookInput('PostToolUse', p.root, { tool_name: 'PowerShell', tool_input: { command: 'npm install left-pad', description: 'x' }, tool_response: {} }), p.home)
   const stop = runHook(hookInput('Stop', p.root, { last_assistant_message: '<receipt>Installed | files: b.txt</receipt>' }), p.home)
-  assert.equal(stop.json.systemMessage, 'turnslip · Installed · 1 file · 📦 packages changed · /turnslip:undo')
+  assert.equal(stop.json.systemMessage, `turnslip · Installed · 1 file · 📦 packages changed · /turnslip:undo\n${PROMO}`)
+})
+
+const DAYMS = 86_400_000
+const dueLicense = (home) => writeJson(join(home, 'license.json'), { key: 'TS-AAAA-BBBB-WXYZ', instanceId: 'lki_1', status: 'active', lastOk: Date.now() - 8 * DAYMS, lastCheck: Date.now() - 8 * DAYMS })
+
+// A stand-in for license-check.mjs that writes a marker: the real one would reach Dodo.
+function markerScript(dir) {
+  const script = join(dir, 'probe.mjs')
+  writeFileSync(script, "import { writeFileSync } from 'node:fs'; writeFileSync(process.argv[2] + '/probe.ran', 'x')\n")
+  return script
+}
+async function waitFor(p, ms = 5000) {
+  for (const end = Date.now() + ms; Date.now() < end; await new Promise((r) => setTimeout(r, 50))) if (existsSync(p)) return true
+  return false
+}
+
+test('the weekly check starts only when due, and once under the lock', async () => {
+  const home = tempDir()
+  const script = markerScript(tempDir())
+  assert.equal(startLicenseCheck(home, { script }), false) // no license
+  dueLicense(home)
+  assert.equal(startLicenseCheck(home, { script }), true)
+  assert.equal(startLicenseCheck(home, { script }), false) // the lock is held
+  assert.ok(await waitFor(join(home, 'probe.ran')))
+})
+
+test('a failed spawn releases the lock', async () => {
+  const home = tempDir()
+  dueLicense(home)
+  assert.equal(startLicenseCheck(home, { execPath: join(home, 'no-node-here') }), true)
+  for (const end = Date.now() + 5000; existsSync(join(home, 'license.lock')) && Date.now() < end;) await new Promise((r) => setTimeout(r, 50))
+  assert.equal(existsSync(join(home, 'license.lock')), false)
+})
+
+test('UserPromptSubmit still starts the turn when the license file is garbage', () => {
+  const home = tempDir()
+  const root = makeProject({ 'a.txt': 'a' })
+  writeFileSync(join(home, 'license.json'), '{"key":')
+  const out = onUserPromptSubmit({ home, input: hookInput('UserPromptSubmit', root) })
+  assert.equal(out.hookSpecificOutput.hookEventName, 'UserPromptSubmit')
+})
+
+test('UserPromptSubmit asks for the weekly check once, with the home', () => {
+  const home = tempDir()
+  const root = makeProject({ 'a.txt': 'a' })
+  const calls = []
+  onUserPromptSubmit({ home, input: hookInput('UserPromptSubmit', root), startCheck: (h) => calls.push(h) })
+  assert.deepEqual(calls, [home])
+})
+
+test('a throwing license check never costs the turn and is logged', () => {
+  const home = tempDir()
+  const root = makeProject({ 'a.txt': 'a' })
+  const out = onUserPromptSubmit({ home, input: hookInput('UserPromptSubmit', root), startCheck: () => { throw new Error('boom') } })
+  assert.equal(out.hookSpecificOutput.hookEventName, 'UserPromptSubmit')
+  assert.match(readFileSync(join(home, 'log'), 'utf8'), /license/)
+})
+
+// In-process (onStop takes the ids): the subprocess hook always reads the shipped ids.
+const SALE = { businessId: 'bus_ts', productId: 'pdt_ts' }
+function flaggedStop(p, ids) {
+  onUserPromptSubmit({ home: p.home, input: hookInput('UserPromptSubmit', p.root) })
+  writeFileSync(join(p.root, 'a.txt'), String(Math.random()))
+  onPostToolUse({ home: p.home, input: hookInput('PostToolUse', p.root, { tool_name: 'Bash', tool_input: { command: 'git push' }, tool_response: { stdout: '' } }) })
+  return onStop({ home: p.home, ids, input: hookInput('Stop', p.root, { last_assistant_message: '<receipt>Edited | files: a.txt</receipt>' }) }).systemMessage
+}
+
+test('the prompt shows once a week: a second flagged slip the same day has none', () => {
+  const p = indexed({ 'a.txt': 'old\n' })
+  assert.ok(flaggedStop(p, SALE).endsWith(`\n${PROMO}`))
+  assert.ok(!flaggedStop(p, SALE).includes(PROMO))
+})
+
+test('a flagged slip carries no prompt before Pro is on sale, and uses up no showing', () => {
+  const p = indexed({ 'a.txt': 'old\n' })
+  assert.ok(!flaggedStop(p, {}).includes(PROMO))
+  assert.equal(existsSync(join(p.home, 'promo.json')), false)
+  assert.ok(flaggedStop(p, SALE).endsWith(`\n${PROMO}`)) // the first showing is still there
 })

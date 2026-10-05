@@ -39,3 +39,20 @@ export function hookInput(event, root, extra = {}) {
     permission_mode: 'acceptEdits', hook_event_name: event, ...extra,
   }
 }
+
+// A stand-in for Dodo: no test may reach the network. routes: { activate: { status, json } | 'throw' | (body) => … }.
+export function fakeFetch(routes) {
+  const calls = []
+  const f = async (url, init) => {
+    const body = JSON.parse(init.body)
+    calls.push({ url, method: init.method, body })
+    const name = url.split('/licenses/')[1]
+    let r = routes[name]
+    if (typeof r === 'function') r = r(body)
+    if (r === undefined) throw new Error(`fakeFetch: no route for ${name}`)
+    if (r === 'throw') throw new TypeError('fetch failed')
+    return { status: r.status, json: async () => { if (r.json === undefined) throw new SyntaxError('not json'); return r.json } }
+  }
+  f.calls = calls
+  return f
+}

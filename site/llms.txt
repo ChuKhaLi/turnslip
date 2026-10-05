@@ -28,7 +28,7 @@ Run `/turnslip:setup` in Claude Code to check. It works in Claude Code in the te
 ## Free and Pro
 
 - Free ($0): the slip after every turn, risk flags, the check against what Claude said, `/turnslip:undo` for the last turn.
-- Pro: $19 one-time at launch, $29 after. No subscription. Adds `/turnslip:history` (every recorded turn, numbered), `/turnslip:undo 3` (undo any recorded turn), `/turnslip:report` (a report of the session) and detailed slips. Checkout opens soon.
+- Pro: $19 one-time until 5 November 2026, then $29. No subscription. Adds `/turnslip:history` (every recorded turn, numbered), `/turnslip:undo 3` (undo any recorded turn), `/turnslip:report` (a report of the session) and detailed slips. Try history, undo of an earlier turn and the session report free, 3 runs in all, before you buy. Buy: https://checkout.dodopayments.com/buy/pdt_0NozAx8DIrAKXP1RGcqn7?quantity=1&redirect_url=https%3A%2F%2Fturnslip.dev%2Fthanks
 - Dodo Payments is the merchant of record and emails the license key. Activate with `/turnslip:activate <key>`; one key works on up to 3 machines; free one with `/turnslip:deactivate`. The key is checked once a week and keeps working for 14 days offline.
 - Refunds: within 14 days, no questions asked.
 

@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 
 export const SITE = join(dirname(fileURLToPath(import.meta.url)), '..', 'site')
 export const read = (rel) => readFileSync(join(SITE, rel), 'utf8')
-export const PAGES = ['index.html', 'terms.html', 'privacy.html', 'refunds.html', '404.html']
+export const PAGES = ['index.html', 'terms.html', 'privacy.html', 'refunds.html', '404.html', 'thanks.html']
 
 // The declarations inside the first `:root { … }` that follows `from` in the text.
 function rootBlock(css, from = 0) {

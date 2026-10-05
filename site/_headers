@@ -13,3 +13,10 @@
 
 /llms.txt
   Content-Type: text/plain; charset=utf-8
+
+/thanks
+  ! Content-Security-Policy
+  ! Referrer-Policy
+  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+  Cache-Control: no-store
+  Referrer-Policy: no-referrer

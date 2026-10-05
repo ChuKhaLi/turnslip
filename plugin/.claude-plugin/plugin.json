@@ -1,8 +1,14 @@
 {
   "name": "turnslip",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A slip after every Claude turn: what changed, what's risky, what Claude didn't mention. Undo in one command.",
-  "license": "FSL-1.1-MIT",
+  "author": {
+    "name": "ChuKhaLi",
+    "email": "support@turnslip.dev",
+    "url": "https://turnslip.dev"
+  },
+  "homepage": "https://turnslip.dev",
   "repository": "https://github.com/ChuKhaLi/turnslip",
+  "license": "FSL-1.1-MIT",
   "icon": "./icon.png"
 }

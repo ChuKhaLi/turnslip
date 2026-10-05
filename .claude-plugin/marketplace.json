@@ -1,7 +1,15 @@
 {
   "name": "turnslip",
-  "owner": { "name": "turnslip" },
+  "description": "turnslip, a Claude Code plugin: a slip after every turn showing what changed on disk, what looks risky and what Claude did not mention, with undo.",
+  "owner": {
+    "name": "turnslip"
+  },
   "plugins": [
-    { "name": "turnslip", "source": "./plugin", "description": "A slip after every Claude turn: what changed, what's risky, what Claude didn't mention. Undo in one command." }
+    {
+      "name": "turnslip",
+      "source": "./plugin",
+      "description": "A slip after every Claude turn: what changed, what's risky, what Claude didn't mention. Undo in one command.",
+      "homepage": "https://turnslip.dev"
+    }
   ]
 }

@@ -79,7 +79,7 @@ test('the home page states the facts the Dodo form will repeat', () => {
   const t = text(read('index.html'))
   for (const s of ['$19', '$29', 'No subscription.', '14 days', 'up to 3 machines', 'Dodo Payments',
     'merchant of record', 'support@turnslip.dev', 'turnslip, by ChuKhaLi', '© 2026 ChuKhaLi', 'FSL-1.1-MIT',
-    '/turnslip:activate', 'Checkout opens soon']) {
+    '/turnslip:activate', 'Buy Pro', 'Try history, undo of an earlier turn and the session report free, 3 runs in all, before you buy.', 'one-time until 5 November 2026, then']) {
     assert.ok(t.includes(s), `index.html does not say "${s}"`)
   }
 })
@@ -144,10 +144,9 @@ test('the legal pages agree with the home page', () => {
   for (const t of [terms, privacy, refunds]) assert.doesNotMatch(t, /\b(?!14\b)\d+ days of buying/)
   assert.ok(terms.includes('up to 3 machines'))
   assert.ok(terms.includes('FSL-1.1-MIT'))
-  for (const t of [terms, privacy, refunds]) {
-    assert.ok(t.includes('Dodo Payments'))
-    assert.match(t, /Last updated: 3 October 2026/)
-  }
+  for (const t of [terms, privacy, refunds]) assert.ok(t.includes('Dodo Payments'))
+  for (const t of [terms, refunds]) assert.match(t, /Last updated: 3 October 2026/)
+  assert.match(privacy, /Last updated: 4 October 2026/) // the /thanks address paragraph
   assert.ok(privacy.includes('no cookies'))
   assert.ok(privacy.includes('~/.turnslip'))
 })
@@ -198,9 +197,11 @@ test('every internal link and asset resolves to a file in site/', () => {
   }
 })
 
-test('nothing loads from another host and no script runs', () => {
+// The one exception (owner, 2026-10-05; design system): /thanks runs its own /thanks.js, nothing else.
+const THANKS_SCRIPT = '<script type="module" src="/thanks.js"></script>'
+test('nothing loads from another host and no script runs, but /thanks.js on /thanks', () => {
   for (const p of PAGES) {
-    const html = read(p)
+    const html = p === 'thanks.html' ? read(p).replace(THANKS_SCRIPT, '') : read(p)
     assert.doesNotMatch(html, /<script(?![^>]*type="application\/ld\+json")/, `${p}: a script that runs`)
     assert.doesNotMatch(html, /<link[^>]+rel="(stylesheet|preload|icon)"[^>]+href="https?:/, `${p}: external asset`)
     assert.doesNotMatch(html, /<img[^>]+src="https?:/, `${p}: external image`)
@@ -280,7 +281,8 @@ test('llms.txt repeats the home page facts and the install commands exactly', ()
   const t = read('llms.txt')
   for (const s of ['$19', '$29', 'No subscription.', '14 days', 'up to 3 machines', 'Dodo Payments', 'FSL-1.1-MIT',
     'support@turnslip.dev', '`claude plugin marketplace add ChuKhaLi/turnslip`', '`claude plugin install turnslip@turnslip`',
-    "a key written to a file your .gitignore doesn't exclude, or a new .env", 'Node.js 18', 'Claude Code 2.1.289 or later']) {
+    "a key written to a file your .gitignore doesn't exclude, or a new .env", 'Node.js 18', 'Claude Code 2.1.289 or later',
+    'Try history, undo of an earlier turn and the session report free, 3 runs in all, before you buy.', 'one-time until 5 November 2026, then']) {
     assert.ok(t.includes(s), `llms.txt does not say "${s}"`)
   }
   // Spec §12.2: the MessageDisplay hook needs 2.1.289; the home page says so too.
@@ -341,4 +343,84 @@ test('the touch icon and the plugin icon exist at their sizes and are linked', (
   const manifest = JSON.parse(readFileSync(join(SITE, '..', 'plugin', '.claude-plugin', 'plugin.json'), 'utf8'))
   assert.equal(manifest.icon, './icon.png')
   assert.deepEqual(pngSize(join(SITE, '..', 'plugin', 'icon.png')), [512, 512])
+})
+
+// The buy button sells the product the plugin accepts: the same id as plugin/lib/dodo.mjs IDS.
+test('the Pro button links to the Dodo checkout of the product the plugin accepts', async () => {
+  const { IDS, checkoutUrl } = await import('../plugin/lib/dodo.mjs')
+  const html = read('index.html')
+  const url = `https://checkout.dodopayments.com/buy/${IDS.productId}?quantity=1&amp;redirect_url=https%3A%2F%2Fturnslip.dev%2Fthanks`
+  assert.ok(html.includes(`<a class="btn btn-primary" href="${url}">Buy Pro, $19</a>`), 'index.html has no buy link for the plugin product')
+  assert.equal(checkoutUrl().replace('&', '&amp;'), url, '/turnslip:buy opens another link than the button')
+  assert.doesNotMatch(html, /disabled>/)
+  assert.doesNotMatch(html, /opens soon/i)
+  assert.ok(read('llms.txt').includes(url.replace('&amp;', '&')), 'llms.txt does not give the checkout link')
+})
+
+// Dodo sends the buyer to /thanks after paying, with the order (license key and email included) in
+// the query string. /thanks.js puts the key in the command; without it the page says where the key is.
+test('the thanks page says where the key is and how to activate it, and is not indexed', () => {
+  const html = read('thanks.html')
+  const t = text(html)
+  assert.match(html, /<meta name="robots" content="noindex">/)
+  assert.doesNotMatch(html, /rel="canonical"/)
+  assert.equal(html.split(THANKS_SCRIPT).length, 2, 'thanks.html loads /thanks.js once')
+  assert.match(html, /<code id="activate">\/turnslip:activate &lt;key&gt;<\/code>/)
+  assert.match(html, /<p id="paste">/)
+  assert.ok(existsSync(join(SITE, 'thanks.js')))
+  for (const s of ['Thank you', 'Dodo Payments', 'email', 'spam', '/turnslip:activate <key>', 'up to 3 machines',
+    'support@turnslip.dev', '14 days']) assert.ok(t.includes(s), `thanks.html does not say "${s}"`)
+  for (const href of ['/#install', '/refunds', 'mailto:support@turnslip.dev']) assert.ok(html.includes(`href="${href}"`), `thanks.html lacks ${href}`)
+})
+
+test('the privacy page says the order details reach /thanks in its address', () => {
+  const t = text(read('privacy.html'))
+  assert.ok(t.includes('turnslip.dev/thanks'))
+  assert.ok(t.includes('license key and email address in the page address'))
+})
+
+// Dodo returns the buyer to /thanks with the license key and email in the query string: no cache
+// (Cloudflare's edge would keep one entry per URL) and no Referer carrying that address onward.
+// Cloudflare then sends Referrer-Policy twice (the /* one first; seen with wrangler dev); the
+// browser takes the last valid value, no-referrer.
+test('/thanks is never cached and sends no Referer', () => {
+  const r = headerRules(read('_headers')).find((x) => x.path === '/thanks')
+  assert.ok(r, 'no /thanks rule')
+  assert.ok(r.headers.includes('Cache-Control: no-store'))
+  assert.ok(r.headers.includes('Referrer-Policy: no-referrer'))
+})
+
+// /thanks drops the site-wide CSP and Referrer-Policy ("! Name", Cloudflare's detach) and sends its
+// own: the same CSP plus script-src 'self' for /thanks.js, and only no-referrer.
+test('/thanks has its own CSP: the site one plus script-src self, nothing else loosened', () => {
+  const rules = headerRules(read('_headers'))
+  const all = rules.find((x) => x.path === '/*').headers.find((h) => h.startsWith('Content-Security-Policy:'))
+  const r = rules.find((x) => x.path === '/thanks').headers
+  assert.ok(r.includes('! Content-Security-Policy') && r.includes('! Referrer-Policy'))
+  const csp = r.filter((h) => h.startsWith('Content-Security-Policy:'))
+  assert.deepEqual(csp, [all.replace("default-src 'none';", "default-src 'none'; script-src 'self';")])
+})
+
+test('thanks.js takes only a well-formed license_key and email from the address', async () => {
+  const { keyFrom } = await import('../site/thanks.js')
+  const k = '1baecd51-1d48-47a5-b7eb-b67fc015c897'
+  assert.equal(keyFrom(`?payment_id=pay_1&status=succeeded&license_key=${k}&email=a%40b.c`), k)
+  for (const q of ['', '?status=succeeded', '?license_key=', '?license_key=short', '?license_key=a%20b%20c%20d%20e',
+    '?license_key=%3Cimg%20src%3Dx%3E12345', `?license_key=${'a'.repeat(256)}`]) assert.equal(keyFrom(q), null, q)
+  const { emailFrom } = await import('../site/thanks.js')
+  assert.equal(emailFrom('?license_key=x&email=snow.worm%2Btag%40gmail.com'), 'snow.worm+tag@gmail.com')
+  for (const q of ['', '?email=', '?email=nobody', '?email=a%20b%40c.d', '?email=%3Cb%3E%40x.y', '?email=a%40b%40c',
+    `?email=${'a'.repeat(250)}%40b.cd`]) assert.equal(emailFrom(q), null, q)
+  assert.match(read('thanks.html'), /to <span id="email">the address you paid with<\/span>\./)
+  const src = read('thanks.js')
+  assert.doesNotMatch(src, /innerHTML|outerHTML|insertAdjacentHTML|document\.write|fetch\(|XMLHttpRequest|eval\(/)
+  assert.match(src, /history\.replaceState/)
+  // The filled email is bold (a strong made in the DOM, its text set as text); unfilled, it reads plain.
+  assert.match(src, /createElement\('strong'\)/)
+  assert.match(src, /replaceChildren\(/)
+  // A Copy button for the filled command (owner, 2026-10-05): hidden until the key is there, so a page
+  // without JavaScript or without a key shows no dead button; it copies text only.
+  assert.match(read('thanks.html'), /<button type="button" id="copy" class="btn btn-secondary" hidden>Copy<\/button>/)
+  assert.match(src, /navigator\.clipboard\.writeText\(/)
+  assert.match(src, /\.hidden = false/)
 })

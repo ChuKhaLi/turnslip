@@ -27,7 +27,7 @@ test('the hook exits 0 for an unknown event', () => {
 })
 
 const COMMANDS = join(LIB, '..', 'commands')
-const VERBS = ['undo', 'history', 'report', 'mode', 'setup']
+const VERBS = ['undo', 'history', 'report', 'mode', 'setup', 'activate', 'deactivate', 'buy']
 
 test('one command file per verb; none can be invoked by the model (final #9)', () => {
   assert.deepEqual(readdirSync(COMMANDS).sort(), VERBS.map((v) => `${v}.md`).sort())
@@ -61,4 +61,27 @@ test('PostToolUse fires for the tools that can write files: subagents and MCP to
   const re = new RegExp(`^(?:${hooks.PostToolUse[0].matcher})$`)
   for (const t of ['Bash', 'PowerShell', 'Edit', 'Write', 'MultiEdit', 'NotebookEdit', 'Task', 'Agent', 'mcp__fs__write_file']) assert.ok(re.test(t), t)
   for (const t of ['Read', 'Grep', 'Glob', 'WebFetch']) assert.ok(!re.test(t), t) // a hook per read would slow every turn
+})
+
+// Anthropic's plugin directory (claude.ai/directory/manage) rejects a plugin folder without a README
+// of 40 words or more outside code, warns on a missing author or marketplace description
+// (`claude plugin validate --strict`), and its security scan holds undisclosed network calls.
+const PLUGIN = join(LIB, '..')
+const words = (md) => md.replace(/```[\s\S]*?```/g, ' ').replace(/^ {4}.*$/gm, ' ').split(/\s+/).filter((w) => /\w/.test(w)).length
+
+test('the plugin folder has a README fit for the plugin directory, disclosing every network call', () => {
+  const md = readFileSync(join(PLUGIN, 'README.md'), 'utf8')
+  assert.ok(words(md) >= 40, `README has ${words(md)} words outside code`)
+  assert.match(md, /^## Network and data$/m)
+  for (const s of ['https://live.dodopayments.com/licenses/activate', '/licenses/validate', '/licenses/deactivate',
+    'once a week', 'never sends your files', '~/.turnslip', 'FSL-1.1-MIT', 'https://turnslip.dev']) assert.ok(md.includes(s), `README lacks "${s}"`)
+})
+
+test('plugin.json and marketplace.json carry what validate --strict asks for', () => {
+  const plugin = JSON.parse(readFileSync(join(PLUGIN, '.claude-plugin', 'plugin.json'), 'utf8'))
+  assert.deepEqual(plugin.author, { name: 'ChuKhaLi', email: 'support@turnslip.dev', url: 'https://turnslip.dev' })
+  assert.equal(plugin.homepage, 'https://turnslip.dev')
+  const market = JSON.parse(readFileSync(join(PLUGIN, '..', '.claude-plugin', 'marketplace.json'), 'utf8'))
+  assert.ok(market.description && market.description.length >= 20, 'marketplace description')
+  assert.equal(market.plugins[0].homepage, 'https://turnslip.dev')
 })
