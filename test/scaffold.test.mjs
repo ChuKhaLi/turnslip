@@ -106,3 +106,20 @@ test('plugin.json and marketplace.json carry what validate --strict asks for', (
   assert.ok(market.description && market.description.length >= 20, 'marketplace description')
   assert.equal(market.plugins[0].homepage, 'https://turnslip.dev')
 })
+
+// The plugin directory's listing reads these four from plugin.json only, each an https URL; Claude Code
+// ignores them (manifest reference, "Directory listing fields"). Each one on turnslip.dev must exist.
+test('plugin.json names the listing links, each a live page of the site or the plugin README', () => {
+  const plugin = JSON.parse(readFileSync(join(PLUGIN, '.claude-plugin', 'plugin.json'), 'utf8'))
+  assert.equal(plugin.privacyPolicyUrl, 'https://turnslip.dev/privacy')
+  assert.equal(plugin.termsOfServiceUrl, 'https://turnslip.dev/terms')
+  assert.equal(plugin.supportUrl, 'https://turnslip.dev/#support')
+  assert.equal(plugin.documentationUrl, 'https://github.com/ChuKhaLi/turnslip/blob/main/plugin/README.md')
+  const site = join(PLUGIN, '..', 'site')
+  for (const p of ['privacy', 'terms']) assert.ok(readFileSync(join(site, `${p}.html`), 'utf8').length > 0, p)
+  const home = readFileSync(join(site, 'index.html'), 'utf8')
+  const support = home.match(/<h3 id="support">[\s\S]*?<\/p>/)?.[0] ?? ''
+  assert.match(support, /mailto:support@turnslip\.dev/)
+  assert.ok(readFileSync(join(PLUGIN, 'README.md'), 'utf8').includes('/turnslip:undo'))
+  assert.equal(JSON.parse(readFileSync(join(PLUGIN, '..', '.claude-plugin', 'marketplace.json'), 'utf8')).plugins[0].supportUrl, undefined)
+})

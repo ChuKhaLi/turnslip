@@ -71,7 +71,7 @@ test('each guide has an article and a breadcrumb, links the other guide and the 
 
 test('the sitemap dates the home page and the guides by their last change', () => {
   const s = read('sitemap.xml')
-  assert.match(s, /<loc>https:\/\/turnslip\.dev\/<\/loc><lastmod>2026-10-05<\/lastmod>/)
+  assert.match(s, /<loc>https:\/\/turnslip\.dev\/<\/loc><lastmod>2026-10-07<\/lastmod>/)
   for (const g of ['undo-claude-code-changes', 'what-did-claude-code-change']) {
     assert.match(s, new RegExp(`<loc>https://turnslip\\.dev/guides/${g}</loc><lastmod>2026-10-05</lastmod>`))
   }
