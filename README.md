@@ -1,9 +1,18 @@
-# turnslip
+# turnslip: see and undo what Claude Code changed
 
-A slip after every Claude Code turn: what actually changed on disk (shell commands included), what
-looks risky, and what Claude didn't mention. Take the whole turn back with `/turnslip:undo`.
+turnslip is a Claude Code plugin. After every turn it adds one line under Claude's reply: what
+actually changed on disk (shell commands included), what looks risky, and what Claude didn't mention.
+Take the whole turn back with `/turnslip:undo`.
 
     turnslip · Added a login page · 3 files · 🔑 key added in config.js · not mentioned: config.js · /turnslip:undo
+
+Claude Code's own `/rewind` restores Claude's file edits, but its documentation says "Checkpointing does
+not track files modified by Bash commands": a file removed by `rm`, or changed by `npm install` or a
+script, does not come back. turnslip snapshots the project before and after each turn, so those count
+too. It works beside `/rewind` and git, not instead of them.
+
+The core is free, with no account and no network. An optional one-time Pro adds history, undo of an
+earlier turn and a session report: see https://turnslip.dev.
 
 ## Install
 

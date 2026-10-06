@@ -1,6 +1,6 @@
 ---
 description: turnslip - open the checkout for turnslip Pro in your browser (one-time, by Dodo Payments)
-allowed-tools: Bash(node:*)
+allowed-tools: Bash(node "${CLAUDE_PLUGIN_ROOT}/lib/cli.mjs":*)
 disable-model-invocation: true
 ---
 !`node "${CLAUDE_PLUGIN_ROOT}/lib/cli.mjs" buy || echo "turnslip needs Node.js 18 or newer: install it from https://nodejs.org, then restart Claude Code."`

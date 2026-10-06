@@ -1,8 +1,8 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { chmodSync, existsSync, readFileSync, writeFileSync } from 'node:fs'
-import { delimiter, join } from 'node:path'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { hideReceipt, parseReceipt } from '../plugin/lib/receipt.mjs'
 import { LIB, tempDir } from './helpers.mjs'
 
@@ -48,47 +48,23 @@ test('display.mjs loads nothing but receipt.mjs: it runs once per batch of every
   assert.deepEqual(imports, ['./receipt.mjs', 'node:fs'])
 })
 
-test('hooks.json sends MessageDisplay to display.mjs', () => {
-  const hooks = JSON.parse(readFileSync(join(LIB, '..', 'hooks', 'hooks.json'), 'utf8')).hooks
-  assert.match(hooks.MessageDisplay[0].hooks[0].command, /\| node "\$\{CLAUDE_PLUGIN_ROOT\}\/lib\/display\.mjs";; esac 2>\/dev\/null; exit 0$/)
-})
-
-// The hooks.json command itself, run as Claude Code runs it (sh on some systems, bash on others):
-// node starts only for a batch that may hold a receipt (spike §16: 82 ms a call with node, 16 without).
+// The hooks.json entry itself, spawned as Claude Code spawns an exec-form hook (no shell, the plugin
+// root substituted into args). node now starts for every batch, receipt or not: 46 ms a call against
+// 16 ms for the old shell filter, whose `d=$(cat)` the plugin directory's validator blocked
+// (spike 2026-10-07-exec-form-hooks, findings 3-5).
 const PLUGIN = join(LIB, '..')
-function viaHooksJson(shell, delta, path) {
-  const hooks = JSON.parse(readFileSync(join(PLUGIN, 'hooks', 'hooks.json'), 'utf8')).hooks
+function viaHooksJson(delta) {
+  const h = JSON.parse(readFileSync(join(PLUGIN, 'hooks', 'hooks.json'), 'utf8')).hooks.MessageDisplay[0].hooks[0]
   const input = JSON.stringify({ hook_event_name: 'MessageDisplay', session_id: 's', cwd: '.', turn_id: 't', message_id: 'm', index: 0, final: true, delta })
-  return spawnSync(shell, ['-c', hooks.MessageDisplay[0].hooks[0].command], { input, encoding: 'utf8', env: { ...process.env, CLAUDE_PLUGIN_ROOT: PLUGIN, ...(path && { PATH: path }) } })
+  const args = h.args.map((a) => a.replaceAll('${CLAUDE_PLUGIN_ROOT}', PLUGIN))
+  return spawnSync(h.command === 'node' ? process.execPath : h.command, args, { input, encoding: 'utf8', env: { ...process.env, TURNSLIP_HOME: tempDir() } })
 }
 
-for (const shell of ['bash', 'sh']) {
-  test(`the hooks.json command under ${shell}: hides a receipt, prints nothing otherwise`, () => {
-    const hit = viaHooksJson(shell, `done\n${RECEIPT}`)
-    assert.equal(hit.status, 0)
-    assert.equal(JSON.parse(hit.stdout).hookSpecificOutput.displayContent, 'done')
-    const miss = viaHooksJson(shell, 'alpha line\n')
-    assert.equal(miss.status, 0)
-    assert.equal(miss.stdout, '')
-  })
-
-  test(`the hooks.json command under ${shell}: node runs only for a batch naming the receipt tag`, () => {
-    const dir = tempDir()
-    const marker = join(dir, 'ran').replace(/\\/g, '/')
-    writeFileSync(join(dir, 'node'), `#!/bin/sh\ncat > /dev/null\necho x >> "${marker}"\n`)
-    chmodSync(join(dir, 'node'), 0o755)
-    const path = `${dir}${delimiter}${process.env.PATH}`
-    viaHooksJson(shell, 'alpha line\nbeta line\n', path)
-    assert.equal(existsSync(marker), false)
-    viaHooksJson(shell, RECEIPT, path)
-    assert.equal(existsSync(marker), true)
-  })
-}
-
-test('the hooks.json command stays silent and exits 0 when node is missing', () => {
-  const noNode = process.env.PATH.split(delimiter).filter((d) => !['node', 'node.exe'].some((n) => existsSync(join(d, n)))).join(delimiter)
-  const r = viaHooksJson('bash', RECEIPT, noNode)
-  assert.equal(r.status, 0)
-  assert.equal(r.stdout, '')
-  assert.equal(r.stderr, '')
+test('the hooks.json MessageDisplay entry hides a receipt and prints nothing otherwise', () => {
+  const hit = viaHooksJson(`done\n${RECEIPT}`)
+  assert.equal(hit.status, 0)
+  assert.equal(JSON.parse(hit.stdout).hookSpecificOutput.displayContent, 'done')
+  const miss = viaHooksJson('alpha line\n')
+  assert.equal(miss.status, 0)
+  assert.equal(miss.stdout, '')
 })

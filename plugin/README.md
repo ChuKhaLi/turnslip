@@ -32,7 +32,8 @@ license key that works on up to 3 machines. Try history, undo of an earlier turn
 Hooks on SessionStart, UserPromptSubmit, PostToolUse, Stop, MessageDisplay and SessionEnd run
 `node` scripts from this folder. They snapshot the project's files (what your `.gitignore` excludes is
 left out), compare them at the end of each turn, and print the slip. A hook never blocks or continues
-a turn, and exits quietly when Node is missing. The MessageDisplay hook hides the one-line receipt
+a turn, and exits quietly when Node is missing. The commands pre-approve only the plugin's own
+`node "${CLAUDE_PLUGIN_ROOT}/lib/cli.mjs"`, nothing else. The MessageDisplay hook hides the one-line receipt
 turnslip asks Claude to end each reply with, unless Claude Code's verbose output is on (Claude Code then
 shows replies unaltered); the slip shows its sentence instead.
 

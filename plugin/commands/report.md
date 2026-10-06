@@ -1,6 +1,6 @@
 ---
 description: turnslip - a report of this session, as a claude.ai artifact where available (Pro)
-allowed-tools: Bash(node:*)
+allowed-tools: Bash(node "${CLAUDE_PLUGIN_ROOT}/lib/cli.mjs":*)
 disable-model-invocation: true
 ---
 !`node "${CLAUDE_PLUGIN_ROOT}/lib/cli.mjs" report --session=${CLAUDE_SESSION_ID} || echo "turnslip needs Node.js 18 or newer: install it from https://nodejs.org, then restart Claude Code."`

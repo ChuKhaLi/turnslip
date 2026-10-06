@@ -1,16 +1,35 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { LIB, hookInput, makeProject, runHook, tempDir } from './helpers.mjs'
 
-test('every hook command stays silent when node is missing', () => {
+// Every hook but MessageDisplay keeps the shell wrapper, so a machine without Node stays silent (spec §10).
+// MessageDisplay runs node in exec form, no shell (spike 2026-10-07-exec-form-hooks): the plugin directory's
+// validator blocked its old shell filter (`d=$(cat)`), and Claude Code shows nothing when an exec-form
+// MessageDisplay hook finds no node, so silence holds there too (owner, 2026-10-07).
+test('every hook stays silent when node is missing; MessageDisplay runs in exec form', () => {
   const hooks = JSON.parse(readFileSync(join(LIB, '..', 'hooks', 'hooks.json'), 'utf8')).hooks
   for (const [event, entries] of Object.entries(hooks)) {
     for (const h of entries.flatMap((e) => e.hooks)) {
-      assert.match(h.command, /2>\/dev\/null; exit 0$/, event)
+      if (event === 'MessageDisplay') {
+        assert.equal(h.command, 'node', event)
+        assert.deepEqual(h.args, ['${CLAUDE_PLUGIN_ROOT}/lib/display.mjs'], event)
+      } else {
+        assert.equal(h.args, undefined, event)
+        assert.equal(h.command, 'node "${CLAUDE_PLUGIN_ROOT}/lib/hook.mjs" 2>/dev/null; exit 0', event)
+      }
     }
   }
+})
+
+test('the exec-form MessageDisplay hook, spawned as Claude Code spawns it, exits 0 and prints nothing on garbage input', () => {
+  const h = JSON.parse(readFileSync(join(LIB, '..', 'hooks', 'hooks.json'), 'utf8')).hooks.MessageDisplay[0].hooks[0]
+  const args = h.args.map((a) => a.replaceAll('${CLAUDE_PLUGIN_ROOT}', join(LIB, '..')))
+  const r = spawnSync(process.execPath, args, { input: 'not json', encoding: 'utf8', env: { ...process.env, TURNSLIP_HOME: tempDir() } })
+  assert.equal(r.status, 0)
+  assert.equal(r.stdout, '')
 })
 
 test('the hook exits 0 with empty stdout on garbage input', () => {
@@ -35,7 +54,9 @@ test('one command file per verb; none can be invoked by the model (final #9)', (
     const md = readFileSync(join(COMMANDS, `${v}.md`), 'utf8')
     const front = md.match(/^---\r?\n([\s\S]*?)\r?\n---/)[1]
     assert.match(front, /^disable-model-invocation: true$/m, v)
-    assert.match(front, /^allowed-tools: Bash\(node:\*\)$/m, v)
+    // Only the plugin's own CLI, not any node command (directory hold ALLOWED_TOOLS_BROAD); this rule
+    // still matches the `… || echo "…"` line without a prompt (spike 2026-10-07, finding 6).
+    assert.match(front, /^allowed-tools: Bash\(node "\$\{CLAUDE_PLUGIN_ROOT\}\/lib\/cli\.mjs":\*\)$/m, v)
     assert.ok(md.includes(`node "\${CLAUDE_PLUGIN_ROOT}/lib/cli.mjs" ${v}`), v)
     assert.ok(md.includes('turnslip needs Node.js 18 or newer'), v)
   }
