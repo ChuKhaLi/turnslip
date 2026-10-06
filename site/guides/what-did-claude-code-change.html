@@ -73,7 +73,7 @@
     <pre class="cmd"><code>turnslip · Added a login page · 2 files · 🔑 key added in config.js · /turnslip:undo</code></pre>
     <ul>
       <li><strong>Per turn:</strong> only this turn's changes, shell commands included, so <code>npm install</code> shows up as packages changed.</li>
-      <li><strong>What went unsaid:</strong> Claude ends its reply with a short receipt of the files it changed, which the screen hides. A file that changed but is missing from it shows as <code>not mentioned: config.js</code>; a file it lists that did not change shows as <code>said but not changed: …</code>.</li>
+      <li><strong>What went unsaid:</strong> Claude ends its reply with a short receipt of the files it changed, which the screen hides unless Claude Code's verbose output is on. A file that changed but is missing from it shows as <code>not mentioned: config.js</code>; a file it lists that did not change shows as <code>said but not changed: …</code>.</li>
       <li><strong>Risky changes:</strong> 🔑 a key written to a file your <code>.gitignore</code> doesn't exclude, or a new <code>.env</code>, 🗑 deletions, 🗄 migrations, 📦 dependencies, 🚀 pushes and deploys, ⚠ writes outside the project.</li>
       <li><strong>Afterwards:</strong> <code>/turnslip:undo</code> takes the turn back. With Pro, <code>/turnslip:history</code> lists the recent turns of the project and <code>/turnslip:report</code> sums up the session.</li>
     </ul>

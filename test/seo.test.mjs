@@ -107,3 +107,16 @@ test('the plugin README links the guides by their full address', async () => {
     for (const g of ['undo-claude-code-changes', 'what-did-claude-code-change']) assert.ok(md.includes(`https://turnslip.dev/guides/${g}`), `${f} lacks ${g}`)
   }
 })
+
+// Captured 2026-10-06 (release item 14, Claude Max, the owner's settings): with Claude Code's
+// "verbose": true the MessageDisplay replacement is ignored and the receipt line shows. Every place
+// that says the line is hidden says so too.
+test('wherever the receipt is said to be hidden, the verbose exception is named', async () => {
+  const { readFileSync } = await import('node:fs')
+  const texts = {
+    'site/llms.txt': read('llms.txt'),
+    'site/guides/what-did-claude-code-change.html': text(read(CHANGED)),
+    'plugin/README.md': readFileSync(new URL('../plugin/README.md', import.meta.url), 'utf8').replace(/\s+/g, ' '),
+  }
+  for (const [f, t] of Object.entries(texts)) assert.ok(t.includes("unless Claude Code's verbose output is on"), `${f} does not name the verbose exception`)
+})

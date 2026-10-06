@@ -33,7 +33,8 @@ Hooks on SessionStart, UserPromptSubmit, PostToolUse, Stop, MessageDisplay and S
 `node` scripts from this folder. They snapshot the project's files (what your `.gitignore` excludes is
 left out), compare them at the end of each turn, and print the slip. A hook never blocks or continues
 a turn, and exits quietly when Node is missing. The MessageDisplay hook hides the one-line receipt
-turnslip asks Claude to end each reply with; the slip shows its sentence instead.
+turnslip asks Claude to end each reply with, unless Claude Code's verbose output is on (Claude Code then
+shows replies unaltered); the slip shows its sentence instead.
 
 ## Network and data
 
