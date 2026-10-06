@@ -53,8 +53,12 @@ test('a passed deadline returns null, never a partial manifest', () => {
   assert.equal(snapshot({ home: tempDir(), root, deadline: performance.now() - 1 }), null)
 })
 
-// Spec §11: a warm turn-start snapshot of 20,000 files fits the 500 ms budget.
-test('a warm snapshot of 20,000 files takes under 500 ms', { timeout: 180000 }, () => {
+// Spec §11: a warm turn-start snapshot of 20,000 files fits the 500 ms budget. On a busy machine that
+// says nothing about the code (captured 2026-10-06: idle 16/16 within 500 ms; with every core busy,
+// 3/3 over it), so the everyday suite holds a 2 s ceiling, which a real slowdown still breaks, and
+// TURNSLIP_PERF=1 holds the spec's 500 ms, run on an idle machine before a release (release checklist).
+const PERF_BUDGET_MS = process.env.TURNSLIP_PERF === '1' ? 500 : 2000
+test(`a warm snapshot of 20,000 files takes under ${PERF_BUDGET_MS} ms`, { timeout: 180000 }, () => {
   const home = tempDir()
   const root = makeProject({})
   for (let d = 0; d < 200; d++) {
@@ -68,7 +72,7 @@ test('a warm snapshot of 20,000 files takes under 500 ms', { timeout: 180000 }, 
   let warm = null
   for (let i = 0; i < 3 && !warm; i++) {
     const t0 = performance.now()
-    warm = snapshot({ home, root, index: cold.index, deadline: t0 + 500 })
+    warm = snapshot({ home, root, index: cold.index, deadline: t0 + PERF_BUDGET_MS })
     times.push(Math.round(performance.now() - t0))
   }
   assert.notEqual(warm, null, `every warm snapshot passed the budget (${times.join(', ')} ms)`)
