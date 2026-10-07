@@ -306,3 +306,42 @@ test('guide fixes: fsck for staged work, the full VS Code quote, PowerShell and 
   const inSitemap = new Set(guideSlugs())
   for (const f of readdirSync(join(SITE, 'guides')).filter((x) => x.endsWith('.html'))) assert.ok(inSitemap.has(f.slice(0, -5)), `${f} is not in the sitemap`)
 })
+
+// Guide 3 (spec §3.3 page 3), an evidence piece: a captured run on Claude Code 2.1.292
+// (docs/spikes/2026-10-07-what-rewind-misses.md). Each result below is what the run left on disk; the
+// method, version, date and sample size are on the page, and the docs' own limit is quoted and linked.
+const MISSES = 'guides/what-rewind-misses.html'
+
+test('the what-rewind-misses page states each measured result, its method, and the docs it matches', () => {
+  const html = read(MISSES)
+  assert.match(html, /<h1>What \/rewind misses: a measured test<\/h1>/)
+  const t = text(html)
+  const first = text(html.slice(0, html.indexOf('<h2>')))
+  for (const s of ['2.1.292', '7 October 2026', 'restored the Write edit and none of the four shell commands'])
+    assert.ok(first.includes(s), `first screen lacks "${s}"`)
+  const results = [...html.matchAll(/<li class="result">([\s\S]*?)<\/li>/g)].map((m) => text(m[1]).trim().split(/\s*: (.*)/s).slice(0, 2))
+  assert.deepEqual(results, [
+    ['rm notes/old.txt', '/rewind did not restore it; /turnslip:undo did.'],
+    ['mv src/config.js src/settings.js', '/rewind did not restore it; /turnslip:undo did.'],
+    ["sed -i 's/3000/8080/' src/config.js", '/rewind did not restore it; /turnslip:undo did.'],
+    ['npm install is-number', '/rewind did not restore it; /turnslip:undo restored package.json and removed package-lock.json, and left node_modules.'],
+    ['A Write tool edit of README.md', 'both restored it.'],
+  ])
+  for (const s of ['one run per command', 'Windows 11', 'Opus 5.5', 'No code changes', 'The code will be unchanged.',
+    'Rewinding does not affect files edited manually or via bash.', 'Update(src\\config.js)', 'PowerShell(npm install is-number)',
+    'Checkpointing does not track files modified by Bash commands.',
+    'The two code restore options appear only when the selected checkpoint has tracked file changes to revert.',
+    'continue using version control, such as Git', 'turnslip 0.3.8',
+    'not undone: packages: npm install is-number', 'installed before the turn', '.gitignore'])
+    assert.ok(t.includes(s), `what-rewind-misses does not say "${s}"`)
+  for (const href of ['https://code.claude.com/docs/en/checkpointing#bash-command-changes-not-tracked',
+    'https://code.claude.com/docs/en/checkpointing#rewind-and-summarize',
+    'https://code.claude.com/docs/en/checkpointing#not-a-replacement-for-version-control',
+    '/guides/undo-claude-code-changes', '/guides/claude-code-deleted-my-files', '/guides/stop-claude-code-destructive-commands', '/#install'])
+    assert.ok(html.includes(`href="${href}"`), `what-rewind-misses does not link ${href}`)
+  const article = ld(html).find((x) => x['@type'] === 'TechArticle')
+  assert.equal(article.headline, 'What /rewind misses: a measured test')
+  assert.equal(article.dateModified, '2026-10-07')
+  assert.match(read('sitemap.xml'), /<loc>https:\/\/turnslip\.dev\/guides\/what-rewind-misses<\/loc><lastmod>2026-10-07<\/lastmod>/)
+  assert.ok(read('llms.txt').includes('(https://turnslip.dev/guides/what-rewind-misses)'))
+})

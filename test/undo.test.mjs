@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, utimesSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, utimesSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { activityCutoff, onPostToolUse, onSessionEnd, onStop, onUserPromptSubmit } from '../plugin/lib/hook.mjs'
@@ -429,4 +429,37 @@ test('the start-of-turn rules come from nested .gitignore files too', () => {
   agentTurn(p, () => writeFileSync(join(p.root, 'web', '.gitignore'), ''))
   const [turn] = listHistory(projectDir(p.home, p.root))
   assert.deepEqual(turn.changes.map((c) => `${c.status} ${c.path}`), ['modified web/.gitignore'])
+})
+
+// A rename keeps the file's creation time, so the birth check alone keeps the new name and undo leaves two
+// copies (captured 2026-10-07, docs/spikes/2026-10-07-what-rewind-misses.md). A path the turn added whose
+// content is exactly what undo writes back to a deleted path is that file moved: removing it loses nothing.
+test('undo of a rename puts the file back under its old name and removes the new one', async () => {
+  const p = indexed({ 'src/config.js': 'export const PORT = 3000\n', 'a.txt': 'a\n' })
+  await sleep(2300)
+  agentTurn(p, () => renameSync(join(p.root, 'src/config.js'), join(p.root, 'src/settings.js')))
+  const out = undoLatest(p)
+  assert.equal(readFileSync(join(p.root, 'src/config.js'), 'utf8'), 'export const PORT = 3000\n')
+  assert.ok(!existsSync(join(p.root, 'src/settings.js')), 'the new name is still there')
+  assert.match(out, /^turnslip · undid "Did things" \(just now\) · restored 1 file, removed 1$/)
+})
+
+test('an older added file is removed only when undo writes its exact content back elsewhere', () => {
+  const turn = (changes) => ({ startedAt: new Date().toISOString(), changes, flags: [] })
+  const old = () => 1 // born long before the turn
+  // Different content: not a move, kept as before.
+  const other = planUndo({ turn: turn([{ path: 'a.js', status: 'deleted', before: 'h1', after: null }, { path: 'b.js', status: 'added', before: null, after: 'h2' }]),
+    currentHash: (q) => (q === 'b.js' ? 'h2' : null), birthtimeOf: old })
+  assert.deepEqual(other.noEarlierCopy, ['b.js'])
+  assert.deepEqual(other.remove, [])
+  // Same content, but the old path was recreated since: undo does not write it back, so the copy stays.
+  const conflict = planUndo({ turn: turn([{ path: 'a.js', status: 'deleted', before: 'h1', after: null }, { path: 'b.js', status: 'added', before: null, after: 'h1' }]),
+    currentHash: (q) => (q === 'b.js' ? 'h1' : 'mine'), birthtimeOf: old })
+  assert.deepEqual(conflict.noEarlierCopy, ['b.js'])
+  assert.deepEqual(conflict.conflicts, ['a.js'])
+  // Same content and the old path is restored: a move, so the new name goes.
+  const moved = planUndo({ turn: turn([{ path: 'a.js', status: 'deleted', before: 'h1', after: null }, { path: 'b.js', status: 'added', before: null, after: 'h1' }]),
+    currentHash: (q) => (q === 'b.js' ? 'h1' : null), birthtimeOf: old })
+  assert.deepEqual(moved.remove, ['b.js'])
+  assert.deepEqual(moved.noEarlierCopy, [])
 })

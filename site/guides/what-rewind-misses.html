@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>What /rewind misses: a measured test of Claude Code checkpoints</title>
+  <meta name="description" content="A captured test on Claude Code 2.1.292: /rewind restored a Write edit but not rm, mv, sed -i or npm install. The method, each result, and what to use instead.">
+  <link rel="canonical" href="https://turnslip.dev/guides/what-rewind-misses">
+  <meta name="theme-color" content="#F9FAFB" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#17181C" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="preload" href="/fonts/plex-sans-latin-wght.v530.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/plex-mono-latin-400.v530.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/style.v2.css">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="turnslip">
+  <meta property="og:url" content="https://turnslip.dev/guides/what-rewind-misses">
+  <meta property="og:title" content="What /rewind misses: a measured test">
+  <meta property="og:description" content="rm, mv, sed -i, npm install and a Write edit, each followed by /rewind and by /turnslip:undo, on Claude Code 2.1.292.">
+  <meta property="og:image" content="https://turnslip.dev/og/what-rewind-misses.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://turnslip.dev/og/what-rewind-misses.png">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "What /rewind misses: a measured test",
+    "description": "A captured test on Claude Code 2.1.292: /rewind restored a Write edit but not rm, mv, sed -i or npm install. The method, each result, and what to use instead.",
+    "url": "https://turnslip.dev/guides/what-rewind-misses",
+    "datePublished": "2026-10-07",
+    "dateModified": "2026-10-07",
+    "author": { "@type": "Person", "name": "ChuKhaLi", "url": "https://github.com/ChuKhaLi" },
+    "about": { "@type": "SoftwareApplication", "name": "Claude Code" }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "turnslip", "item": "https://turnslip.dev/" },
+      { "@type": "ListItem", "position": 2, "name": "Guides", "item": "https://turnslip.dev/guides" },
+      { "@type": "ListItem", "position": 3, "name": "What /rewind misses: a measured test", "item": "https://turnslip.dev/guides/what-rewind-misses" }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <!--email_off-->
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site">
+    <a class="brand" href="/"><svg class="mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path d="M8 7v17h3" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><rect x="15" y="21.5" width="11" height="5" rx="2.5" fill="currentColor"/></svg>turnslip</a>
+    <nav aria-label="Site">
+      <a href="/#how">How it works</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/#install">Install</a>
+      <a href="https://github.com/ChuKhaLi/turnslip">GitHub</a>
+    </nav>
+  </header>
+
+  <main id="main" class="legal">
+    <h1>What /rewind misses: a measured test</h1>
+    <p class="fine">Last updated: 7 October 2026</p>
+    <p>In a test on 7 October 2026 with Claude Code 2.1.292, <code>/rewind</code> restored the Write edit and none of the four shell commands: <code>rm</code>, <code>mv</code>, <code>sed -i</code> and <code>npm install</code>. That is what the checkpointing documentation says it does: "Checkpointing does not track files modified by Bash commands." (<a href="https://code.claude.com/docs/en/checkpointing#bash-command-changes-not-tracked">checkpointing</a>). Each command ran in its own fresh project, once for <code>/rewind</code> and once for <code>/turnslip:undo</code>:</p>
+    <ul>
+      <li class="result"><code>rm notes/old.txt</code>: /rewind did not restore it; /turnslip:undo did.</li>
+      <li class="result"><code>mv src/config.js src/settings.js</code>: /rewind did not restore it; /turnslip:undo did.</li>
+      <li class="result"><code>sed -i 's/3000/8080/' src/config.js</code>: /rewind did not restore it; /turnslip:undo did.</li>
+      <li class="result"><code>npm install is-number</code>: /rewind did not restore it; /turnslip:undo restored package.json and removed package-lock.json, and left node_modules.</li>
+      <li class="result">A Write tool edit of <code>README.md</code>: both restored it.</li>
+    </ul>
+    <figure>
+  <svg viewBox="0 0 400 500" role="img" aria-labelledby="d-title d-desc">
+    <title id="d-title">What each undo brought back</title>
+    <desc id="d-desc">rm, mv, sed -i and npm install: /rewind restored none of them. /turnslip:undo restored rm, mv and sed -i, and npm install in part: it left node_modules. A Write tool edit: both restored it.</desc>
+    <rect x="1" y="10" width="398" height="82" rx="6" fill="currentColor" fill-opacity="0.06"/>
+    <text x="16" y="34" fill="currentColor" font-family="inherit" font-size="16" font-weight="600">rm notes/old.txt</text>
+    <circle cx="24" cy="53" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <text x="40" y="58" fill="currentColor" font-family="inherit" font-size="15">/rewind: not restored</text>
+    <circle cx="24" cy="75" r="6" fill="currentColor"/>
+    <text x="40" y="80" fill="currentColor" font-family="inherit" font-size="15">/turnslip:undo: restored</text>
+    <rect x="1" y="102" width="398" height="82" rx="6" fill="currentColor" fill-opacity="0.06"/>
+    <text x="16" y="126" fill="currentColor" font-family="inherit" font-size="16" font-weight="600">mv src/config.js src/settings.js</text>
+    <circle cx="24" cy="145" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <text x="40" y="150" fill="currentColor" font-family="inherit" font-size="15">/rewind: not restored</text>
+    <circle cx="24" cy="167" r="6" fill="currentColor"/>
+    <text x="40" y="172" fill="currentColor" font-family="inherit" font-size="15">/turnslip:undo: restored</text>
+    <rect x="1" y="194" width="398" height="82" rx="6" fill="currentColor" fill-opacity="0.06"/>
+    <text x="16" y="218" fill="currentColor" font-family="inherit" font-size="16" font-weight="600">sed -i on src/config.js</text>
+    <circle cx="24" cy="237" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <text x="40" y="242" fill="currentColor" font-family="inherit" font-size="15">/rewind: not restored</text>
+    <circle cx="24" cy="259" r="6" fill="currentColor"/>
+    <text x="40" y="264" fill="currentColor" font-family="inherit" font-size="15">/turnslip:undo: restored</text>
+    <rect x="1" y="286" width="398" height="82" rx="6" fill="currentColor" fill-opacity="0.06"/>
+    <text x="16" y="310" fill="currentColor" font-family="inherit" font-size="16" font-weight="600">npm install is-number</text>
+    <circle cx="24" cy="329" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <text x="40" y="334" fill="currentColor" font-family="inherit" font-size="15">/rewind: not restored</text>
+    <circle cx="24" cy="351" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M24 345 A6 6 0 0 1 24 357 Z" fill="currentColor"/>
+    <text x="40" y="356" fill="currentColor" font-family="inherit" font-size="15">/turnslip:undo: package.json back, node_modules left</text>
+    <rect x="1" y="378" width="398" height="82" rx="6" fill="currentColor" fill-opacity="0.06"/>
+    <text x="16" y="402" fill="currentColor" font-family="inherit" font-size="16" font-weight="600">Write tool edit of README.md</text>
+    <circle cx="24" cy="421" r="6" fill="currentColor"/>
+    <text x="40" y="426" fill="currentColor" font-family="inherit" font-size="15">/rewind: restored</text>
+    <circle cx="24" cy="443" r="6" fill="currentColor"/>
+    <text x="40" y="448" fill="currentColor" font-family="inherit" font-size="15">/turnslip:undo: restored</text>
+    <circle cx="24" cy="486" r="6" fill="currentColor"/>
+    <text x="36" y="491" fill="currentColor" font-family="inherit" font-size="14">restored</text>
+    <circle cx="114" cy="486" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M114 480 A6 6 0 0 1 114 492 Z" fill="currentColor"/>
+    <text x="126" y="491" fill="currentColor" font-family="inherit" font-size="14">in part</text>
+    <circle cx="194" cy="486" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <text x="206" y="491" fill="currentColor" font-family="inherit" font-size="14">not restored</text>
+  </svg>
+  <figcaption>/rewind brought back the one change made with Claude's file tool; the shell commands stayed done.</figcaption>
+</figure>
+
+    <h2>Method</h2>
+    <p>Claude Code 2.1.292 with Opus 5.5 on Windows 11, interactive, with permission prompts switched off and turnslip 0.3.7 loaded; the <code>mv</code> run for <code>/turnslip:undo</code> was repeated with turnslip 0.3.8 (see below). Ten fresh projects, none of them a git repository, each holding the same four files: <code>README.md</code>, <code>package.json</code>, <code>src/config.js</code> (<code>export const PORT = 3000</code>) and <code>notes/old.txt</code>. One prompt per project, asking for one command and nothing else, or for a Write tool edit of <code>README.md</code>. That is one run per command for each way back, so a sample of one each.</p>
+    <p>After the turn, in five of the projects: <code>/rewind</code>, the turn's prompt, then <b>Restore code</b> where the menu offered it and <b>Restore conversation</b> where it did not. In the other five: <code>/turnslip:undo</code>. Then the files on disk were listed. Every result on this page is what was on disk afterwards, captured in the run, not taken from the documentation.</p>
+
+    <h2>What the rewind menu showed</h2>
+    <p>For every shell turn the menu listed the prompt with "No code changes", and its confirm screen said "The code will be unchanged." and offered no code option. The documentation describes this: "The two code restore options appear only when the selected checkpoint has tracked file changes to revert." (<a href="https://code.claude.com/docs/en/checkpointing#rewind-and-summarize">rewind and summarize</a>).</p>
+    <figure class="demo">
+  <div class="term" role="img" aria-label="A Claude Code session: Claude deletes notes/old.txt with rm, then the rewind menu says the code will be unchanged and offers only to restore the conversation."><span class="cc-prompt">❯ Delete notes/old.txt with rm notes/old.txt, nothing else.</span>
+<span class="cc-tool">●</span> <b>Bash</b>(rm notes/old.txt)
+<span class="cc-dim">  ⎿</span>  Done
+
+  Rewind
+  Confirm you want to restore to the point before you sent this message:
+<span class="cc-dim">  │</span> Delete notes/old.txt with rm notes/old.txt, nothing else.
+  The conversation will be forked.
+  The code will be unchanged.
+  ❯ 1. Restore conversation
+    2. Summarize from here
+    3. Summarize up to here
+    4. Never mind</div>
+</figure>
+    <p>For the Write turn the list showed "README.md +1 -3", and the confirm screen offered <b>Restore code</b> with a warning underneath: "⚠ Rewinding does not affect files edited manually or via bash." Restore code put <code>README.md</code> back.</p>
+    <p>Two details from the run. Claude Code drew the <code>sed -i</code> call as <code>Update(src\config.js)</code>, the way it draws a file edit, and the menu still said "No code changes": the port stayed 8080. On Windows, Claude ran the install through its PowerShell tool, <code>PowerShell(npm install is-number)</code>, and rewind did not restore that either. The documentation's own example names <code>rm</code>, <code>mv</code> and <code>cp</code>, and says: "These file modifications cannot be undone through rewind. Only direct file edits made through Claude's file editing tools are tracked."</p>
+
+    <h2>Without turnslip</h2>
+    <p>Commit before a request that runs shell commands. The checkpointing documentation puts it this way: "Checkpoints are designed for quick, session-level recovery. For permanent version history and collaboration, continue using version control, such as Git, for commits, branches, and long-term history." (<a href="https://code.claude.com/docs/en/checkpointing#not-a-replacement-for-version-control">not a replacement for version control</a>).</p>
+    <p>To make Claude Code ask before the destructive commands: <a href="/guides/stop-claude-code-destructive-commands">Stop Claude Code from running rm -rf and git reset --hard</a>. If files are already gone: <a href="/guides/claude-code-deleted-my-files">Claude Code deleted my files: what can still come back</a>.</p>
+
+    <h2>What /turnslip:undo did</h2>
+    <p><a href="/">turnslip</a> snapshots the project's files and compares them at the end of each turn (<a href="https://github.com/ChuKhaLi/turnslip/blob/main/plugin/README.md">its README</a>), so its undo does not depend on which tool made the change. In the same test it restored the <code>rm</code>, the <code>mv</code>, the <code>sed -i</code> and the Write edit in full, and the <code>npm install</code> in part:</p>
+    <ul>
+      <li><code>mv</code>: with turnslip 0.3.7 the undo brought <code>src/config.js</code> back but kept <code>src/settings.js</code>, because a renamed file keeps its creation time and undo removed only files created after the turn started. turnslip 0.3.8, fixed after this test, removes the new name when its content is exactly what undo writes back; the repeated run printed "restored 1 file, removed 1" and left only <code>src/config.js</code>.</li>
+      <li><code>npm install</code>: it restored <code>package.json</code>, removed the new <code>package-lock.json</code>, and left <code>node_modules</code>, which turnslip never tracks, whatever your <code>.gitignore</code> says (<a href="https://github.com/ChuKhaLi/turnslip/blob/main/plugin/lib/gitignore.mjs">gitignore.mjs</a>). The line names the command under "not undone".</li>
+    </ul>
+    <figure class="demo">
+  <div class="term" role="img" aria-label="A Claude Code session on Windows: Claude installs an npm package through the PowerShell tool, the turnslip slip reports packages changed, and /turnslip:undo restores one file, removes one, and lists the install as not undone."><span class="cc-prompt">❯ Run npm install is-number, nothing else.</span>
+<span class="cc-tool">●</span> <b>PowerShell</b>(npm install is-number)
+<span class="cc-dim">  ⎿</span>  added 1 package, and audited 2 packages in 2s
+     found 0 vulnerabilities
+<span class="slip">  ⎿  Stop says: turnslip · Installed the is-number npm package in the project · 2 files · 📦 packages changed ·
+     /turnslip:undo</span>
+<span class="cc-prompt">❯ /turnslip:undo</span>
+<span class="cc-reply">●</span> turnslip · undid "Installed the is-number npm package in the project" (just now) · restored 1 file, removed 1 · not
+  undone: packages: npm install is-number</div>
+</figure>
+
+    <h2>Limits of this test</h2>
+    <ul>
+      <li>One run per command, on one Windows 11 machine, with one model and one Claude Code version. Another version may behave differently; the date and version are at the top for that reason.</li>
+      <li>turnslip helps only if it was installed before the turn. It leaves out what your <code>.gitignore</code> excludes, and the free version undoes the last turn; undoing an earlier one is part of Pro.</li>
+    </ul>
+    <p>Related: <a href="/guides/undo-claude-code-changes">How to undo Claude Code changes</a> · <a href="/guides">All guides</a> · <a href="/#install">Install turnslip, free</a></p>
+  </main>
+
+  <footer class="site">
+    <p>turnslip, by ChuKhaLi. Support: <a href="mailto:support@turnslip.dev">support@turnslip.dev</a></p>
+    <nav aria-label="Guides">
+      <a href="/guides">All guides</a>
+      <a href="/guides/undo-claude-code-changes">How to undo Claude Code changes</a>
+      <a href="/guides/what-did-claude-code-change">What did Claude Code change?</a>
+    </nav>
+    <nav aria-label="Legal">
+      <a href="/terms">Terms</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/refunds">Refunds</a>
+      <a href="https://github.com/ChuKhaLi/turnslip">GitHub</a>
+    </nav>
+    <p class="fine">© 2026 ChuKhaLi</p>
+  </footer>
+  <!--/email_off-->
+</body>
+</html>

@@ -24,17 +24,22 @@ export function planUndo({ turn, currentHash, birthtimeOf = () => null }) {
   const restore = []
   const remove = []
   const conflicts = []
-  const noEarlierCopy = []
+  const older = []
   for (const c of turn.changes ?? []) {
     if (currentHash(c.path) !== c.after) { conflicts.push(c.path); continue }
-    if (c.unknownBefore) { noEarlierCopy.push(c.path); continue }
+    if (c.unknownBefore) { older.push({ path: c.path }); continue }
     if (c.before === null && c.knownAbsent) remove.push(c.path)
     else if (c.before === null) {
       const born = birthtimeOf(c.path)
       if (Number.isFinite(startedMs) && born > 0 && born >= startedMs - 2000) remove.push(c.path)
-      else noEarlierCopy.push(c.path)
+      else older.push({ path: c.path, hash: c.after })
     } else restore.push({ path: c.path, hash: c.before })
   }
+  // A rename keeps the creation time, so the moved file looks older than the turn. When undo writes its
+  // exact content back to a deleted path, removing the new name loses nothing (spike 2026-10-07-what-rewind-misses).
+  const backAt = new Set(restore.filter((r) => currentHash(r.path) === null).map((r) => r.hash))
+  const noEarlierCopy = []
+  for (const o of older) (o.hash && backAt.has(o.hash) ? remove : noEarlierCopy).push(o.path)
   // A delete command is a file effect: listed only when undo restores none of the turn's deletions, which
   // then fell where no snapshot reaches (a path .gitignore excludes, outside the project). A miss in a
   // mixed case beats calling restored files "not undone" (spec §8).
