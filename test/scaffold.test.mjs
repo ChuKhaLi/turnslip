@@ -123,3 +123,24 @@ test('plugin.json names the listing links, each a live page of the site or the p
   assert.ok(readFileSync(join(PLUGIN, 'README.md'), 'utf8').includes('/turnslip:undo'))
   assert.equal(JSON.parse(readFileSync(join(PLUGIN, '..', '.claude-plugin', 'marketplace.json'), 'utf8')).plugins[0].supportUrl, undefined)
 })
+
+// The directory derives a listing's surfaces from its components: commands load as skills in claude.ai chat
+// (no shell, so turnslip does nothing there) and hooks load in Cowork (never tested). The README, which the
+// listing shows as its description, says so before anyone installs (claude.com/docs/plugins/platform-support).
+test('the plugin README says turnslip is for Claude Code, not claude.ai chat, and Cowork is untested', () => {
+  const md = readFileSync(join(PLUGIN, 'README.md'), 'utf8')
+  const head = md.slice(0, md.indexOf('## Commands'))
+  assert.match(head, /works in Claude Code \(the terminal and VS Code\) only/i)
+  assert.match(head, /In claude\.ai chat it does nothing/)
+  assert.match(head, /Cowork is untested/)
+})
+
+// The directory listing shows keywords as discovery tags ("Keywords: Not set" otherwise); the docs set no
+// limit, so: a short list of lowercase kebab-case words, the ones a search for this plugin would use.
+test('plugin.json carries discovery keywords', () => {
+  const { keywords } = JSON.parse(readFileSync(join(PLUGIN, '.claude-plugin', 'plugin.json'), 'utf8'))
+  assert.ok(Array.isArray(keywords) && keywords.length >= 5 && keywords.length <= 12, String(keywords))
+  for (const k of keywords) assert.match(k, /^[a-z0-9]+(?:-[a-z0-9]+)*$/, k)
+  assert.equal(new Set(keywords).size, keywords.length)
+  for (const k of ['undo', 'rewind', 'hooks']) assert.ok(keywords.includes(k), k)
+})

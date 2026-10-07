@@ -1,6 +1,6 @@
 {
   "name": "turnslip",
-  "version": "0.3.4",
+  "version": "0.3.6",
   "description": "A slip after every Claude turn: what changed, what's risky, what Claude didn't mention. Undo in one command.",
   "author": {
     "name": "ChuKhaLi",
@@ -10,6 +10,18 @@
   "homepage": "https://turnslip.dev",
   "repository": "https://github.com/ChuKhaLi/turnslip",
   "license": "FSL-1.1-MIT",
+  "keywords": [
+    "undo",
+    "rewind",
+    "checkpoint",
+    "rollback",
+    "diff",
+    "file-changes",
+    "hooks",
+    "secrets",
+    "security",
+    "vibe-coding"
+  ],
   "icon": "./icon.png",
   "documentationUrl": "https://github.com/ChuKhaLi/turnslip/blob/main/plugin/README.md",
   "supportUrl": "https://turnslip.dev/#support",

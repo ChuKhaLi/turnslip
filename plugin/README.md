@@ -5,6 +5,9 @@ looks risky, and what Claude didn't mention. Take the whole turn back with `/tur
 
     turnslip · Added a login page · 3 files · 🔑 key added in config.js · not mentioned: config.js · /turnslip:undo
 
+turnslip works in Claude Code (the terminal and VS Code) only. In claude.ai chat it does nothing: chat
+runs no hooks and no shell commands. Cowork is untested.
+
 Needs Claude Code 2.1.289 or newer and Node.js 18 or newer; `/turnslip:setup` checks both.
 Site and Pro: https://turnslip.dev
 
