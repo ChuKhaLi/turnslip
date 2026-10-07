@@ -160,7 +160,9 @@ test('every page has the support address and the legal links in its footer', () 
   }
 })
 
-const CANON = { 'index.html': 'https://turnslip.dev/', 'terms.html': 'https://turnslip.dev/terms',
+const CANON = { 'index.html': 'https://turnslip.dev/', 'guides.html': 'https://turnslip.dev/guides',
+  'guides/claude-code-deleted-my-files.html': 'https://turnslip.dev/guides/claude-code-deleted-my-files',
+  'guides/stop-claude-code-destructive-commands.html': 'https://turnslip.dev/guides/stop-claude-code-destructive-commands', 'terms.html': 'https://turnslip.dev/terms',
   'privacy.html': 'https://turnslip.dev/privacy', 'refunds.html': 'https://turnslip.dev/refunds',
   'guides/undo-claude-code-changes.html': 'https://turnslip.dev/guides/undo-claude-code-changes',
   'guides/what-did-claude-code-change.html': 'https://turnslip.dev/guides/what-did-claude-code-change' }

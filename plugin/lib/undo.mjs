@@ -35,7 +35,12 @@ export function planUndo({ turn, currentHash, birthtimeOf = () => null }) {
       else noEarlierCopy.push(c.path)
     } else restore.push({ path: c.path, hash: c.before })
   }
+  // A delete command is a file effect: listed only when undo restores none of the turn's deletions, which
+  // then fell where no snapshot reaches (a path .gitignore excludes, outside the project). A miss in a
+  // mixed case beats calling restored files "not undone" (spec §8).
+  const restoresDeletion = (turn.changes ?? []).some((c) => c.status === 'deleted' && restore.some((r) => r.path === c.path))
   const notUndone = (turn.flags ?? [])
+    .filter((f) => !(f.kind === 'delete' && f.command && restoresDeletion))
     .filter((f) => f.command || (f.kind === 'outside' && !f.command))
     .map((f) => (f.kind === 'outside' ? `outside the project: ${(f.paths ?? [f.path]).join(', ')}` : `${f.kind}: ${shortCmd(f.command)}`))
   return { restore, remove, conflicts, noEarlierCopy, notUndone }

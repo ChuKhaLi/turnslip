@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stop Claude Code from running rm -rf and git reset --hard</title>
+  <meta name="description" content="Make Claude Code ask before rm -rf, git reset --hard and git clean: permission rules, a PreToolUse hook, what they cannot catch, and a backstop.">
+  <link rel="canonical" href="https://turnslip.dev/guides/stop-claude-code-destructive-commands">
+  <meta name="theme-color" content="#F9FAFB" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#17181C" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="preload" href="/fonts/plex-sans-latin-wght.v530.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/plex-mono-latin-400.v530.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/style.v2.css">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="turnslip">
+  <meta property="og:url" content="https://turnslip.dev/guides/stop-claude-code-destructive-commands">
+  <meta property="og:title" content="Stop Claude Code from running rm -rf and git reset --hard">
+  <meta property="og:description" content="Ask rules and a PreToolUse hook that make Claude Code stop before destructive commands, and what they cannot catch.">
+  <meta property="og:image" content="https://turnslip.dev/og/stop-claude-code-destructive-commands.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://turnslip.dev/og/stop-claude-code-destructive-commands.png">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Stop Claude Code from running rm -rf and git reset --hard",
+    "description": "Make Claude Code ask before rm -rf, git reset --hard and git clean: permission rules, a PreToolUse hook, what they cannot catch, and a backstop.",
+    "url": "https://turnslip.dev/guides/stop-claude-code-destructive-commands",
+    "datePublished": "2026-10-07",
+    "dateModified": "2026-10-07",
+    "author": { "@type": "Person", "name": "ChuKhaLi", "url": "https://github.com/ChuKhaLi" },
+    "about": { "@type": "SoftwareApplication", "name": "Claude Code" }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "turnslip", "item": "https://turnslip.dev/" },
+      { "@type": "ListItem", "position": 2, "name": "Guides", "item": "https://turnslip.dev/guides" },
+      { "@type": "ListItem", "position": 3, "name": "Stop Claude Code from running rm -rf and git reset --hard", "item": "https://turnslip.dev/guides/stop-claude-code-destructive-commands" }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <!--email_off-->
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site">
+    <a class="brand" href="/"><svg class="mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path d="M8 7v17h3" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><rect x="15" y="21.5" width="11" height="5" rx="2.5" fill="currentColor"/></svg>turnslip</a>
+    <nav aria-label="Site">
+      <a href="/#how">How it works</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/#install">Install</a>
+      <a href="https://github.com/ChuKhaLi/turnslip">GitHub</a>
+    </nav>
+  </header>
+
+  <main id="main" class="legal">
+    <h1>Stop Claude Code from running rm -rf and git reset --hard</h1>
+    <p class="fine">Last updated: 7 October 2026</p>
+    <p>Since v2.1.283, interactive Claude Code sessions start in auto mode: a classifier model reviews Claude's actions instead of you, and routine commands run without a prompt (<a href="https://code.claude.com/docs/en/permission-modes">permission modes</a>). Two settings put a question, or a refusal, in front of the commands you care about. Neither is airtight, so this page also says what they miss.</p>
+
+    <h2>1. Ask rules in your settings</h2>
+    <p>Permission rules live in a settings file: <code>.claude/settings.json</code> applies to "everyone working in the folder that contains it", <code>~/.claude/settings.json</code> to "you, in every project on this machine" (<a href="https://code.claude.com/docs/en/settings">settings documentation</a>). This makes Claude Code ask before the usual destructive commands:</p>
+<pre class="cmd"><code>{
+  "permissions": {
+    "ask": [
+      "Bash(rm *)",
+      "Bash(git reset --hard *)",
+      "Bash(git clean *)",
+      "Bash(git checkout -- *)",
+      "Bash(git push --force *)",
+      "PowerShell(Remove-Item *)"
+    ]
+  }
+}</code></pre>
+    <figure class="demo">
+  <div class="term" role="img" aria-label="A Claude Code session with the ask rule Bash(rm *): Claude wants to run rm -rf build, and Claude Code stops to ask, saying the ask rule overrides auto mode for this command."><span class="cc-prompt">❯ The build folder is stale. Delete it with rm -rf build, nothing else.</span>
+<span class="cc-tool">●</span> <b>Bash</b>(rm -rf build)
+<span class="cc-dim">  ⎿</span>  Waiting…
+ Bash command
+ Delete the build folder
+ rm -rf build
+ Ask rule Bash(rm *) overrides auto mode for this command.
+<span class="cc-dim"> /permissions to let auto mode decide</span>
+ Do you want to proceed?
+ ❯ 1. Yes
+   2. No</div>
+</figure>
+    <p>How the rules apply, from the documentation:</p>
+    <ul>
+      <li>"Explicit ask rules still force a prompt" in auto mode, and "Deny rules block in every mode, including bypassPermissions" (<a href="https://code.claude.com/docs/en/permission-modes">permission modes</a>).</li>
+      <li>"Rules are evaluated in order: deny, then ask, then allow." Deny and ask rules "apply when any subcommand matches them", so <code>cd dist &amp;&amp; rm -rf build</code> is caught too (<a href="https://code.claude.com/docs/en/permissions">permissions</a>).</li>
+      <li>"PowerShell permission rules use the same shape as Bash rules" (<a href="https://code.claude.com/docs/en/permissions#powershell">permissions</a>), hence <code>PowerShell(Remove-Item *)</code> for Windows sessions that use the PowerShell tool.</li>
+      <li>"Bash rules match the whole command text, with <code>*</code> standing in for any text", so <code>Bash(git push --force *)</code> does not catch git push -f, or <code>--force</code> written later in the line: add a pattern for each form you use.</li>
+      <li>Move a rule to <code>"deny"</code> for a command you never want run at all.</li>
+    </ul>
+    <p>Checked on 7 October 2026 with Claude Code 2.1.292: with <code>"ask": ["Bash(rm *)"]</code> and every Bash command otherwise allowed, a non-interactive session asked to run <code>rm -rf build</code> got "Claude requested permissions to use Bash, but you haven't granted it yet." and the folder stayed; without the rule it was deleted. The screen above is the same rule in an interactive session.</p>
+    <p>What the rules miss: a rule matches the command text Claude writes, so <code>Bash(rm *)</code> stops <code>rm -rf build/</code> but not <code>/bin/rm -rf build/</code> or <code>bash -c 'rm -rf build/'</code>. The permissions documentation says such a rule "isn't a security boundary around the program".</p>
+    <p>Ask rules hold even when prompts are switched off: Claude Code "doesn't auto-approve the following in any mode, including <code>bypassPermissions</code>", and the first item is "Tools matched by an explicit ask rule" (<a href="https://code.claude.com/docs/en/permission-modes">permission modes</a>). Of that mode the permissions documentation still says: "Only use this mode in isolated environments like containers or VMs where Claude Code can't cause damage."</p>
+
+    <h2>2. A PreToolUse hook</h2>
+    <p>A hook runs your own script before a tool runs and can refuse it. This is the example from the hooks documentation, <a href="https://code.claude.com/docs/en/hooks#how-a-hook-resolves">How a hook resolves</a>. In your settings file, the <code>matcher</code> narrows to Bash calls and the <code>if</code> condition to subcommands matching <code>rm *</code>:</p>
+<pre class="cmd"><code>{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(rm *)",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/block-rm.sh",
+            "args": []
+          }
+        ]
+      }
+    ]
+  }
+}</code></pre>
+    <p>The script returns a <code>permissionDecision</code> of <code>"deny"</code> when the command contains <code>rm -rf</code>. Save it as <code>.claude/hooks/block-rm.sh</code> and make it executable with <code>chmod +x .claude/hooks/block-rm.sh</code>; it needs <code>jq</code>:</p>
+<pre class="cmd"><code>#!/bin/bash
+# .claude/hooks/block-rm.sh
+COMMAND=$(jq -r '.tool_input.command')
+
+if echo "$COMMAND" | grep -q 'rm -rf'; then
+  jq -n '{
+    hookSpecificOutput: {
+      hookEventName: "PreToolUse",
+      permissionDecision: "deny",
+      permissionDecisionReason: "Destructive command blocked by hook"
+    }
+  }'
+else
+  exit 0  # no decision; normal permission flow applies
+fi</code></pre>
+    <p>It looks for the text <code>rm -rf</code>, so <code>rm -fr build</code> gets through, and it misses the disguised forms above too. The hooks documentation itself advises: "use the permission system rather than a hook to enforce a hard allow or deny". A hook is for checks a rule cannot express.</p>
+
+    <h2>3. A backstop: see what happened, and undo it</h2>
+    <figure>
+  <svg viewBox="0 0 400 384" role="img" aria-labelledby="d-title d-desc">
+    <title id="d-title">Where each safeguard acts</title>
+    <desc id="d-desc">Ask and deny rules and a PreToolUse hook act before a command Claude writes runs. turnslip acts after the turn: it shows what changed and can put files back.</desc>
+    <rect x="60" y="8" width="280" height="44" rx="6" fill="currentColor" fill-opacity="0.06"/>
+    <rect x="60" y="8" width="280" height="44" rx="6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <text x="200" y="35" text-anchor="middle" fill="currentColor" font-family="inherit" font-size="15">Claude writes a command</text>
+    <path d="M200 52 V82 M193 75 L200 82 L207 75" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <text x="200" y="100" text-anchor="middle" fill="currentColor" font-family="inherit" font-size="15" font-weight="600">Before it runs</text>
+    <rect x="8" y="112" width="186" height="64" rx="6" fill="currentColor" fill-opacity="0.12"/>
+    <rect x="8" y="112" width="186" height="64" rx="6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <text x="101" y="139" text-anchor="middle" fill="currentColor" font-family="inherit" font-size="15">Ask / deny rules</text>
+    <text x="101" y="161" text-anchor="middle" fill="currentColor" font-family="inherit" font-size="15">in settings.json</text>
+    <rect x="206" y="112" width="186" height="64" rx="6" fill="currentColor" fill-opacity="0.12"/>
+    <rect x="206" y="112" width="186" height="64" rx="6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <text x="299" y="139" text-anchor="middle" fill="currentColor" font-family="inherit" font-size="15">PreToolUse hook</text>
+    <text x="299" y="161" text-anchor="middle" fill="currentColor" font-family="inherit" font-size="15">your own script</text>
+    <path d="M200 176 V206 M193 199 L200 206 L207 199" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <rect x="60" y="208" width="280" height="44" rx="6" fill="currentColor" fill-opacity="0.06"/>
+    <rect x="60" y="208" width="280" height="44" rx="6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <text x="200" y="235" text-anchor="middle" fill="currentColor" font-family="inherit" font-size="15">The command runs</text>
+    <path d="M200 252 V282 M193 275 L200 282 L207 275" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <text x="200" y="300" text-anchor="middle" fill="currentColor" font-family="inherit" font-size="15" font-weight="600">After the turn</text>
+    <rect x="8" y="312" width="384" height="64" rx="6" fill="currentColor" fill-opacity="0.12"/>
+    <rect x="8" y="312" width="384" height="64" rx="6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <text x="200" y="339" text-anchor="middle" fill="currentColor" font-family="inherit" font-size="15">turnslip shows what changed</text>
+    <text x="200" y="361" text-anchor="middle" fill="currentColor" font-family="inherit" font-size="15">/turnslip:undo puts files back</text>
+  </svg>
+  <figcaption>Rules and hooks can stop a command; turnslip cannot, it shows and undoes what a turn did.</figcaption>
+</figure>
+    <p>Rules and hooks only stop what they match. <a href="/">turnslip</a> is detection, not prevention: after each turn it shows one line with what changed on disk, including a deletion count, and <code>/turnslip:undo</code> puts the turn's files back, files a shell command removed included. It does not keep paths your <code>.gitignore</code> excludes, and a database migration or a <code>git push</code> stays done. Commit before large requests as well.</p>
+    <p>If files are already gone: <a href="/guides/claude-code-deleted-my-files">Claude Code deleted my files: what can still come back</a>.</p>
+    <p>Related: <a href="/guides/undo-claude-code-changes">How to undo Claude Code changes</a> · <a href="/guides">All guides</a> · <a href="/#install">Install turnslip, free</a></p>
+  </main>
+
+  <footer class="site">
+    <p>turnslip, by ChuKhaLi. Support: <a href="mailto:support@turnslip.dev">support@turnslip.dev</a></p>
+    <nav aria-label="Guides">
+      <a href="/guides">All guides</a>
+      <a href="/guides/undo-claude-code-changes">How to undo Claude Code changes</a>
+      <a href="/guides/what-did-claude-code-change">What did Claude Code change?</a>
+    </nav>
+    <nav aria-label="Legal">
+      <a href="/terms">Terms</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/refunds">Refunds</a>
+      <a href="https://github.com/ChuKhaLi/turnslip">GitHub</a>
+    </nav>
+    <p class="fine">© 2026 ChuKhaLi</p>
+  </footer>
+  <!--/email_off-->
+</body>
+</html>

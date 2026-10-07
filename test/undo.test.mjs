@@ -58,6 +58,27 @@ test('effects outside files are listed as not undone', () => {
   assert.deepEqual(plan.notUndone, ['packages: npm install left-pad', 'outside the project: /etc/x'])
 })
 
+// A delete command whose deletions undo puts back is a file effect, not one "outside files" (spec §8):
+// listing it as not undone beside "restored 2 files" read as a contradiction (captured 2026-10-07, spike
+// 2026-10-07-claude-code-deleted-my-files). It stays listed when undo restores none of the turn's
+// deletions: then they fell where no snapshot reaches (a path .gitignore excludes, outside the project).
+const rmTurn = (changes) => ({ changes, flags: [{ kind: 'delete', command: 'rm -rf build' }, ...changes.map((c) => ({ kind: 'delete', path: c.path }))] })
+
+test('a delete command whose deleted files undo restores is not listed as not undone', () => {
+  const turn = rmTurn([{ path: 'build/a.css', status: 'deleted', before: 'h1', after: null }, { path: 'build/b.html', status: 'deleted', before: 'h2', after: null }])
+  const plan = planUndo({ turn, currentHash: () => null })
+  assert.equal(plan.restore.length, 2)
+  assert.deepEqual(plan.notUndone, [])
+})
+
+test('a delete command that left no deletion undo can restore stays listed as not undone', () => {
+  const ignored = planUndo({ turn: { changes: [], flags: [{ kind: 'delete', command: 'rm -rf node_modules' }] }, currentHash: () => null })
+  assert.deepEqual(ignored.notUndone, ['delete: rm -rf node_modules'])
+  const recreated = planUndo({ turn: rmTurn([{ path: 'build/a.css', status: 'deleted', before: 'h1', after: null }]), currentHash: () => 'mine' })
+  assert.deepEqual(recreated.conflicts, ['build/a.css'])
+  assert.deepEqual(recreated.notUndone, ['delete: rm -rf build'])
+})
+
 test('an undo run inside a turn does not show up as that turn\'s change', () => {
   const p = indexed({ 'a.txt': 'a\n' })
   agentTurn(p, () => writeFileSync(join(p.root, 'a.txt'), 'b\n'))

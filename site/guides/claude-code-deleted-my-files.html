@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Claude Code deleted my files: what can still come back</title>
+  <meta name="description" content="Files gone after a Claude Code turn? What git, /rewind, your editor's history, backups and turnslip can each bring back, and what to do first.">
+  <link rel="canonical" href="https://turnslip.dev/guides/claude-code-deleted-my-files">
+  <meta name="theme-color" content="#F9FAFB" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#17181C" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="preload" href="/fonts/plex-sans-latin-wght.v530.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/plex-mono-latin-400.v530.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/style.v2.css">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="turnslip">
+  <meta property="og:url" content="https://turnslip.dev/guides/claude-code-deleted-my-files">
+  <meta property="og:title" content="Claude Code deleted my files: what can still come back">
+  <meta property="og:description" content="What git, /rewind, editor history, backups and turnslip can each bring back after a Claude Code turn deleted files.">
+  <meta property="og:image" content="https://turnslip.dev/og/claude-code-deleted-my-files.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://turnslip.dev/og/claude-code-deleted-my-files.png">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Claude Code deleted my files: what can still come back",
+    "description": "Files gone after a Claude Code turn? What git, /rewind, your editor's history, backups and turnslip can each bring back, and what to do first.",
+    "url": "https://turnslip.dev/guides/claude-code-deleted-my-files",
+    "datePublished": "2026-10-07",
+    "dateModified": "2026-10-07",
+    "author": { "@type": "Person", "name": "ChuKhaLi", "url": "https://github.com/ChuKhaLi" },
+    "about": { "@type": "SoftwareApplication", "name": "Claude Code" }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "turnslip", "item": "https://turnslip.dev/" },
+      { "@type": "ListItem", "position": 2, "name": "Guides", "item": "https://turnslip.dev/guides" },
+      { "@type": "ListItem", "position": 3, "name": "Claude Code deleted my files: what can still come back", "item": "https://turnslip.dev/guides/claude-code-deleted-my-files" }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <!--email_off-->
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site">
+    <a class="brand" href="/"><svg class="mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path d="M8 7v17h3" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><rect x="15" y="21.5" width="11" height="5" rx="2.5" fill="currentColor"/></svg>turnslip</a>
+    <nav aria-label="Site">
+      <a href="/#how">How it works</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/#install">Install</a>
+      <a href="https://github.com/ChuKhaLi/turnslip">GitHub</a>
+    </nav>
+  </header>
+
+  <main id="main" class="legal">
+    <h1>Claude Code deleted my files: what can still come back</h1>
+    <p class="fine">Last updated: 7 October 2026</p>
+    <p>A Claude Code turn ran <code>rm</code>, <code>git reset --hard</code> or <code>git clean</code>, and files are gone. Work through the sections below in order: the first one only applies if turnslip was installed. Until you are done, let nothing else write to that folder, Claude included.</p>
+
+    <h2>If turnslip was already installed</h2>
+    <p>Run <code>/turnslip:undo</code> now, if the deleting turn was the last one; with Pro, <code>/turnslip:undo 3</code> takes back an earlier turn. <a href="/">turnslip</a> snapshots the project before and after every turn, so it brings back files a shell command deleted. It helps only if it was installed before the turn. Its limits: it never reads paths your <code>.gitignore</code> excludes, so a gitignored <code>.env</code> is not among them; on the first turns in a new or very large project a turn can run in light mode, where shell changes are not tracked yet and the slip says so; files over 5 MB are not kept. If you did not have it, read on: everything below works without it.</p>
+    <figure class="demo">
+  <div class="term" role="img" aria-label="A Claude Code turn: asked to delete the stale build folder, Claude runs rm -rf build, and the turnslip slip under the reply reports two files deleted and offers /turnslip:undo."><span class="cc-prompt">❯ The build folder is stale. Delete it with rm -rf build, nothing else.</span>
+<span class="cc-tool">●</span> <b>Bash</b>(rm -rf build)
+<span class="cc-dim">  ⎿</span>  Done
+
+<span class="cc-reply">●</span> I ran rm -rf build in the project directory and did nothing else. The command finished without errors.
+<span class="slip">  ⎿  Stop says: turnslip · Deleted the stale build folder with rm -rf build · 2 files · 🗑 2 files deleted · /turnslip:undo</span></div>
+</figure>
+    <p>In this captured turn, <code>/turnslip:undo</code> then answered "restored 2 files", and the <code>build</code> folder was back (Claude Code 2.1.292).</p>
+
+    <h2>1. git</h2>
+    <ul>
+      <li><a href="https://git-scm.com/docs/git-status"><code>git status</code></a> "displays paths that have differences between the index file and the current HEAD commit, paths that have differences between the working tree and the index file", so a deleted file git knows about shows up there.</li>
+      <li><a href="https://git-scm.com/docs/git-restore"><code>git restore</code></a> restores "specified paths in the working tree"; without other options the contents come from the index, the copy git keeps of your last commit plus anything you staged. <code>git restore path/to/file</code> brings back one file, <code>git restore .</code> every one.</li>
+      <li>After <code>git reset --hard</code> or a deleted branch, look at <a href="https://git-scm.com/docs/git-reflog"><code>git reflog</code></a>: reflogs "record when the tips of branches and other references were updated", and <code>HEAD@{2}</code> means "where HEAD used to be two moves ago". Find the entry from before the turn and run <code>git reset --hard HEAD@{n}</code> with its number.</li>
+      <li>If Claude ran <code>git stash</code>, <a href="https://git-scm.com/docs/git-stash"><code>git stash list</code></a> lists the stash entries and <code>git stash pop</code> applies the latest one again.</li>
+    </ul>
+    <p>What git cannot bring back: changes it never recorded. Work you neither committed nor staged is not in the index or in any commit, so after <code>git reset --hard</code> or <code>git checkout -- .</code> it is gone for good. Work you had staged may still be in git’s object store: <a href="https://git-scm.com/book/en/v2/Git-Internals-Git-Objects">Pro Git</a> says that when you run <code>git add</code> and <code>git commit</code>, Git "stores blobs for the files that have changed", and <a href="https://git-scm.com/docs/git-fsck"><code>git fsck --lost-found</code></a> will "Write dangling objects into .git/lost-found/commit/ or .git/lost-found/other/"; "If the object is a blob, the contents are written into the file".</p>
+
+    <h2>2. Claude Code's /rewind</h2>
+    <p><code>/rewind</code> restores edits Claude made with its own file editing tools. It does not bring back what a shell command deleted. <a href="https://code.claude.com/docs/en/checkpointing">Claude Code's checkpointing documentation</a> says so directly: "Checkpointing does not track files modified by Bash commands." Its example is a turn that runs <code>rm file.txt</code>: "These file modifications cannot be undone through rewind."</p>
+
+    <h2>3. Your editor's local history</h2>
+    <p>VS Code keeps a local history of the files you save in it: <a href="https://code.visualstudio.com/docs/getstarted/userinterface#_local-file-history">"Depending on your settings, every time you save an editor, a new entry is added to the list."</a> A deleted file can be brought back with <strong>Local History: Find Entry to Restore</strong> in the Timeline view. It is on by default and skips files over 256 KB. If you use another editor, check whether it keeps a history of its own.</p>
+
+    <h2>4. Backups and synced folders</h2>
+    <p>Look in the Trash (macOS) or the Recycle Bin (Windows). If the folder is covered by Time Machine, Windows File History or a sync service that keeps old versions, restore the folder from there to a separate location and copy back what you need.</p>
+
+    <h2>5. Recovery software</h2>
+    <p>Recovery tools look for deleted data still left on the drive. On an SSD with TRIM they usually find nothing usable: in <a href="https://techgage.com/article/too_trim_when_ssd_data_recovery_is_impossible/3">a 2010 test of recovery tools</a>, small files "recovered fine on the non-TRIM" drive "and not whatsoever on the TRIM", and the verdict was: "Recovering data from a TRIM-erased drive is just not going to happen." If you try anyway, run the tool from another drive and save what it finds to another drive.</p>
+    <figure>
+  <svg viewBox="0 0 400 500" role="img" aria-labelledby="d-title d-desc">
+    <title id="d-title">What each way back covers</title>
+    <desc id="d-desc">git brings back deleted files only if it tracked them, not work never staged or committed, and does not work without commits made beforehand. Claude Code's /rewind does not bring back files a shell command deleted, but needs no setup. Editor local history holds only versions you saved, and is on by default. turnslip restores files a shell command deleted in a tracked turn, uncommitted work included, but only if it was installed before the turn.</desc>
+    <rect x="1" y="10" width="398" height="104" rx="6" fill="currentColor" fill-opacity="0.06"/>
+    <text x="16" y="34" fill="currentColor" font-family="inherit" font-size="16" font-weight="600">git</text>
+    <circle cx="24" cy="53" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M24 47 A6 6 0 0 1 24 59 Z" fill="currentColor"/>
+    <text x="40" y="58" fill="currentColor" font-family="inherit" font-size="15">rm-deleted files: if git tracked them</text>
+    <circle cx="24" cy="75" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <text x="40" y="80" fill="currentColor" font-family="inherit" font-size="15">never staged or committed: no</text>
+    <circle cx="24" cy="97" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <text x="40" y="102" fill="currentColor" font-family="inherit" font-size="15">works without setup: no, commit first</text>
+    <rect x="1" y="126" width="398" height="104" rx="6" fill="currentColor" fill-opacity="0.06"/>
+    <text x="16" y="150" fill="currentColor" font-family="inherit" font-size="16" font-weight="600">Claude Code /rewind</text>
+    <circle cx="24" cy="169" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <text x="40" y="174" fill="currentColor" font-family="inherit" font-size="15">rm-deleted files: no</text>
+    <circle cx="24" cy="191" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M24 185 A6 6 0 0 1 24 197 Z" fill="currentColor"/>
+    <text x="40" y="196" fill="currentColor" font-family="inherit" font-size="15">uncommitted work: Claude’s file edits only</text>
+    <circle cx="24" cy="213" r="6" fill="currentColor"/>
+    <text x="40" y="218" fill="currentColor" font-family="inherit" font-size="15">works without setup: built in</text>
+    <rect x="1" y="242" width="398" height="104" rx="6" fill="currentColor" fill-opacity="0.06"/>
+    <text x="16" y="266" fill="currentColor" font-family="inherit" font-size="16" font-weight="600">Editor local history (VS Code)</text>
+    <circle cx="24" cy="285" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M24 279 A6 6 0 0 1 24 291 Z" fill="currentColor"/>
+    <text x="40" y="290" fill="currentColor" font-family="inherit" font-size="15">deleted files: saved versions only</text>
+    <circle cx="24" cy="307" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M24 301 A6 6 0 0 1 24 313 Z" fill="currentColor"/>
+    <text x="40" y="312" fill="currentColor" font-family="inherit" font-size="15">uncommitted work: what you saved</text>
+    <circle cx="24" cy="329" r="6" fill="currentColor"/>
+    <text x="40" y="334" fill="currentColor" font-family="inherit" font-size="15">works without setup: on by default</text>
+    <rect x="1" y="358" width="398" height="104" rx="6" fill="currentColor" fill-opacity="0.06"/>
+    <text x="16" y="382" fill="currentColor" font-family="inherit" font-size="16" font-weight="600">turnslip</text>
+    <circle cx="24" cy="401" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M24 395 A6 6 0 0 1 24 407 Z" fill="currentColor"/>
+    <text x="40" y="406" fill="currentColor" font-family="inherit" font-size="15">rm-deleted files: if the turn was tracked</text>
+    <circle cx="24" cy="423" r="6" fill="currentColor"/>
+    <text x="40" y="428" fill="currentColor" font-family="inherit" font-size="15">uncommitted work: snapshot per turn</text>
+    <circle cx="24" cy="445" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <text x="40" y="450" fill="currentColor" font-family="inherit" font-size="15">works without setup: no, install first</text>
+    <circle cx="24" cy="486" r="6" fill="currentColor"/>
+    <text x="36" y="491" fill="currentColor" font-family="inherit" font-size="14">yes</text>
+    <circle cx="84" cy="486" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M84 480 A6 6 0 0 1 84 492 Z" fill="currentColor"/>
+    <text x="96" y="491" fill="currentColor" font-family="inherit" font-size="14">partly</text>
+    <circle cx="164" cy="486" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <text x="176" y="491" fill="currentColor" font-family="inherit" font-size="14">no</text>
+  </svg>
+  <figcaption>No single way back covers everything: commit often, and set up the others before you need them.</figcaption>
+</figure>
+
+    <h2>Next time</h2>
+    <p>Commit before a large request, so git has something to return to. Make Claude Code ask before destructive commands: <a href="/guides/stop-claude-code-destructive-commands">how to stop Claude Code from running rm -rf and git reset --hard</a>. And keep a record of every turn that you can undo, shell commands included: that is what <a href="/#install">turnslip</a> does, free.</p>
+    <p>Related: <a href="/guides/undo-claude-code-changes">How to undo Claude Code changes</a> · <a href="/guides">All guides</a> · <a href="/#install">Install turnslip, free</a></p>
+  </main>
+
+  <footer class="site">
+    <p>turnslip, by ChuKhaLi. Support: <a href="mailto:support@turnslip.dev">support@turnslip.dev</a></p>
+    <nav aria-label="Guides">
+      <a href="/guides">All guides</a>
+      <a href="/guides/undo-claude-code-changes">How to undo Claude Code changes</a>
+      <a href="/guides/what-did-claude-code-change">What did Claude Code change?</a>
+    </nav>
+    <nav aria-label="Legal">
+      <a href="/terms">Terms</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/refunds">Refunds</a>
+      <a href="https://github.com/ChuKhaLi/turnslip">GitHub</a>
+    </nav>
+    <p class="fine">© 2026 ChuKhaLi</p>
+  </footer>
+  <!--/email_off-->
+</body>
+</html>
