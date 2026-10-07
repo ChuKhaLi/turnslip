@@ -63,7 +63,8 @@ test('each guide has an article and a breadcrumb, links the other guide and the 
     const data = ld(html)
     const article = data.find((x) => x['@type'] === 'TechArticle')
     assert.ok(article && article.headline === /<h1>([^<]+)<\/h1>/.exec(html)[1].replace(/&amp;/g, '&'), `${p}: TechArticle headline is the h1`)
-    assert.equal(article.dateModified, '2026-10-05')
+    assert.equal(article.dateModified, '2026-10-07')
+    assert.equal(article.datePublished, '2026-10-05')
     const crumbs = data.find((x) => x['@type'] === 'BreadcrumbList')
     assert.equal(crumbs?.itemListElement.at(-1).item, `https://turnslip.dev/${p.replace('.html', '')}`)
     assert.ok(html.includes(`href="/${other.replace('.html', '')}"`), `${p} does not link ${other}`)
@@ -75,7 +76,7 @@ test('the sitemap dates the home page and the guides by their last change', () =
   const s = read('sitemap.xml')
   assert.match(s, /<loc>https:\/\/turnslip\.dev\/<\/loc><lastmod>2026-10-07<\/lastmod>/)
   for (const g of ['undo-claude-code-changes', 'what-did-claude-code-change']) {
-    assert.match(s, new RegExp(`<loc>https://turnslip\\.dev/guides/${g}</loc><lastmod>2026-10-05</lastmod>`))
+    assert.match(s, new RegExp(`<loc>https://turnslip\\.dev/guides/${g}</loc><lastmod>2026-10-07</lastmod>`))
   }
 })
 
@@ -125,7 +126,7 @@ test('wherever the receipt is said to be hidden, the verbose exception is named'
 
 // Figure rules for every guide (skill spec docs/specs/2026-10-07-write-guide-skill-design.md §5-6).
 const guideFiles = () => readdirSync(join(SITE, 'guides')).filter((f) => f.endsWith('.html')).map((f) => `guides/${f}`)
-const LEGACY_OG = new Set(['guides/undo-claude-code-changes.html', 'guides/what-did-claude-code-change.html'])
+const LEGACY_OG = new Set() // the two first guides got their own images on 2026-10-07
 const mainOf = (html) => /<main[\s\S]*?<\/main>/.exec(html)?.[0] ?? ''
 
 test('each guide has its own 1200x630 social image; the two first guides may keep /og.png', () => {
@@ -384,4 +385,40 @@ test('the API-key guide says rotate first, finds and removes the key, and states
   assert.equal(article.dateModified, '2026-10-07')
   assert.match(read('sitemap.xml'), /<loc>https:\/\/turnslip\.dev\/guides\/claude-code-api-key-in-code<\/loc><lastmod>2026-10-07<\/lastmod>/)
   assert.ok(read('llms.txt').includes('(https://turnslip.dev/guides/claude-code-api-key-in-code)'))
+})
+
+// The two first guides, refreshed 2026-10-07 through the write-guide skill: each had a claim the day's captures
+// contradict (undo guide: npm install undone in full; what-changed guide: every shell command a Bash line), no
+// captured figure and the shared /og.png. Captures: docs/spikes/2026-10-07-first-guides-refresh.md (WezTerm).
+test('the undo guide states what each way back restores, from today\'s sources and captures', () => {
+  const html = read(UNDO), t = text(html)
+  for (const s of ['including those a command like rm, mv or npm install touched'])
+    assert.ok(!t.includes(s), `undo guide still says "${s}"`)
+  for (const s of ['Checkpointing does not track files modified by Bash commands.', 'Any other subagent', "rewinding doesn't restore the edits",
+    "Checkpointing doesn't rewind symlinked or hard-linked files.", 'By default, if --staged is given, the contents are restored from HEAD, otherwise from the index.',
+    'git restore --staged --worktree .', 'git clean -n', "Don't actually remove anything, just show what would be done.",
+    'All ignored and untracked files are also stashed', 'Overwrite all files and directories with the version from <commit>',
+    'restored 2 files, removed 0', 'node_modules is never tracked either', 'the installed packages stay', '0.3.8', '5 MB', 'last 50 turns', 'light mode', '2.1.292'])
+    assert.ok(t.includes(s), `undo guide does not say "${s}"`)
+  for (const href of ['https://code.claude.com/docs/en/checkpointing#bash-command-changes-not-tracked',
+    'https://code.claude.com/docs/en/checkpointing#subagent-edits-not-restored', 'https://git-scm.com/docs/git-restore',
+    'https://git-scm.com/docs/git-clean', 'https://git-scm.com/docs/git-stash', 'https://git-scm.com/docs/git-reset',
+    '/guides/what-rewind-misses', '/guides/claude-code-deleted-my-files'])
+    assert.ok(html.includes(`href="${href}"`), `undo guide does not link ${href}`)
+  assert.equal((mainOf(html).match(/<figure class="demo">/g) ?? []).length, 1)
+})
+
+test('the what-changed guide says which changes no tool line names, from today\'s sources and captures', () => {
+  const html = read(CHANGED), t = text(html)
+  for (const s of ['every shell command as a Bash line', 'Added a login page'])
+    assert.ok(!t.includes(s), `what-changed guide still says "${s}"`)
+  for (const s of ['paths in the working tree that are not tracked by Git (and are not ignored by gitignore', 'git diff HEAD',
+    'Typically you would want comparison with the latest commit', "cat > src/config.js <<'EOF'", 'added 1 package',
+    '3 files · 📦 packages changed', 'Update(src\\config.js)', 'PowerShell(npm install is-number)', '2.1.292',
+    'not mentioned:', 'said but not changed:', '/turnslip:history'])
+    assert.ok(t.includes(s), `what-changed guide does not say "${s}"`)
+  for (const href of ['https://git-scm.com/docs/git-status', 'https://git-scm.com/docs/git-diff', '/guides/what-rewind-misses',
+    '/guides/claude-code-api-key-in-code'])
+    assert.ok(html.includes(`href="${href}"`), `what-changed guide does not link ${href}`)
+  assert.equal((mainOf(html).match(/<figure class="demo">/g) ?? []).length, 1)
 })

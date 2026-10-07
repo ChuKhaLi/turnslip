@@ -18,17 +18,18 @@
   <meta property="og:url" content="https://turnslip.dev/guides/what-did-claude-code-change">
   <meta property="og:title" content="What did Claude Code just change?">
   <meta property="og:description" content="Every file a Claude Code turn created, changed or deleted, shell commands included, and what its summary left out.">
-  <meta property="og:image" content="https://turnslip.dev/og.png">
+  <meta property="og:image" content="https://turnslip.dev/og/what-did-claude-code-change.png">
   <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://turnslip.dev/og/what-did-claude-code-change.png">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "TechArticle",
     "headline": "What did Claude Code just change?",
-    "description": "How to see every file a Claude Code turn created, changed or deleted, shell commands included, and what its summary left out.",
+    "description": "Find out which files Claude Code created, changed or deleted in a turn, shell commands included, and where its summary left something out.",
     "url": "https://turnslip.dev/guides/what-did-claude-code-change",
     "datePublished": "2026-10-05",
-    "dateModified": "2026-10-05",
+    "dateModified": "2026-10-07",
     "author": { "@type": "Person", "name": "ChuKhaLi", "url": "https://github.com/ChuKhaLi" },
     "about": { "@type": "SoftwareApplication", "name": "Claude Code" }
   }
@@ -39,7 +40,8 @@
     "@type": "BreadcrumbList",
     "itemListElement": [
       { "@type": "ListItem", "position": 1, "name": "turnslip", "item": "https://turnslip.dev/" },
-      { "@type": "ListItem", "position": 2, "name": "What did Claude Code just change?", "item": "https://turnslip.dev/guides/what-did-claude-code-change" }
+      { "@type": "ListItem", "position": 2, "name": "Guides", "item": "https://turnslip.dev/guides" },
+      { "@type": "ListItem", "position": 3, "name": "What did Claude Code just change?", "item": "https://turnslip.dev/guides/what-did-claude-code-change" }
     ]
   }
   </script>
@@ -59,26 +61,40 @@
 
   <main id="main" class="legal">
     <h1>What did Claude Code just change?</h1>
-    <p class="fine">Last updated: 5 October 2026</p>
+    <p class="fine">Last updated: 7 October 2026</p>
     <p>At the end of a turn Claude Code tells you what it did. That reply is a summary, written by the model. The files on disk are the record, and the two do not always match: a file the reply never mentions, a key written into a config file, a deletion inside a shell command. Here are the ways to see what really changed.</p>
 
     <h2>Read the tool calls</h2>
-    <p>Every edit Claude makes with its file tools shows in the conversation as an <code>Update</code> or <code>Write</code> line, and every shell command as a <code>Bash</code> line; expand them to see the details. This covers what Claude did through its tools. It does not tell you which files a command such as <code>npm install</code> or a build script changed, and in a long turn the lines scroll past.</p>
+    <p>Each tool call shows in the conversation as a line you can expand. A file Claude changes with its file tools appears under the file's name, but a file changed by a shell command appears only inside the command, if at all. In a test on 7 October 2026 with Claude Code 2.1.292, Claude rewrote <code>src/config.js</code> with <code>cat &gt; src/config.js &lt;&lt;'EOF'</code> inside a Bash call, and <code>npm install</code> changed <code>package.json</code> and added <code>package-lock.json</code>; no tool line named those two files:</p>
+    <figure class="demo">
+  <div class="term" role="img" aria-label="A Claude Code session: Claude installs is-number with npm and rewrites src/config.js through a Bash heredoc; the tool lines show the commands, and the turnslip slip counts three changed files and packages changed."><span class="cc-prompt">❯ Install the is-number package with npm and use it in src/config.js to check that PORT is a number. Keep it
+  short.</span>
+<span class="cc-tool">●</span> <b>Bash</b>(… npm install is-number 2&gt;&amp;1 | tail -5 &amp;&amp;
+      cat package.json)
+<span class="cc-dim">  ⎿</span>  added 1 package, and audited 2 packages in 1s
+     found 0 vulnerabilities
+<span class="cc-dim">     … +7 lines (ctrl+o to expand)</span>
+<span class="cc-tool">●</span> <b>Bash</b>(… cat &gt; src/config.js &lt;&lt;'EOF'
+      import isNumber from 'is-number'…)
+
+<span class="slip">  ⎿  Stop says: turnslip · Installed is-number with npm and added a check in src/config.js that throws if PORT
+     isn't a number · 3 files · 📦 packages changed · /turnslip:undo</span></div>
+</figure>
+    <p>A shell call is not always drawn as Bash either: in another test that day, Claude Code drew a <code>sed -i</code> call as <code>Update(src\config.js)</code>, the way it draws a file edit, and on Windows it ran <code>npm install</code> through its PowerShell tool, <code>PowerShell(npm install is-number)</code> (<a href="/guides/what-rewind-misses">What /rewind misses</a>). The tool lines say what Claude ran; they are not a list of changed files.</p>
 
     <h2>Ask git</h2>
-    <p><code>git status</code> lists the changed and new files, and <code>git diff</code> shows the changes. It sees what Claude's tools and its shell commands did alike. Its limits: it compares with your last commit, so several turns and your own edits run together; it hides files your <code>.gitignore</code> excludes, such as a new key in <code>.env</code>; and it shows nothing in a folder that is not a git repository.</p>
+    <p><code>git status</code> lists, among others, "paths in the working tree that are not tracked by Git (and are not ignored by gitignore[5])" (<a href="https://git-scm.com/docs/git-status">git status</a>), and <code>git diff HEAD</code> shows the changes to tracked files since your last commit: "Typically you would want comparison with the latest commit, so if you do not give &lt;commit&gt;, it defaults to HEAD." (<a href="https://git-scm.com/docs/git-diff">git diff</a>). It sees what Claude's tools and its shell commands did alike. Its limits: it compares with your last commit, so several turns and your own edits run together; it leaves out files your <code>.gitignore</code> excludes, such as a new key in <code>.env</code>; and it shows nothing in a folder that is not a git repository.</p>
 
     <h2>A slip after every turn</h2>
-    <p><a href="/">turnslip</a> is a Claude Code plugin that snapshots the project when a turn starts and when it ends, and prints the difference as one line under Claude's reply, after <code>Stop says:</code>:</p>
-    <pre class="cmd"><code>turnslip · Added a login page · 2 files · 🔑 key added in config.js · /turnslip:undo</code></pre>
+    <p><a href="/">turnslip</a> is a Claude Code plugin that snapshots the project's files and compares them at the end of each turn (<a href="https://github.com/ChuKhaLi/turnslip/blob/main/plugin/README.md">its README</a>), and prints the difference as one line under Claude's reply, after <code>Stop says:</code>, as in the test above.</p>
     <ul>
       <li><strong>Per turn:</strong> only this turn's changes, shell commands included, so <code>npm install</code> shows up as packages changed.</li>
       <li><strong>What went unsaid:</strong> Claude ends its reply with a short receipt of the files it changed, which the screen hides unless Claude Code's verbose output is on. A file that changed but is missing from it shows as <code>not mentioned: config.js</code>; a file it lists that did not change shows as <code>said but not changed: …</code>.</li>
-      <li><strong>Risky changes:</strong> 🔑 a key written to a file your <code>.gitignore</code> doesn't exclude, or a new <code>.env</code>, 🗑 deletions, 🗄 migrations, 📦 dependencies, 🚀 pushes and deploys, ⚠ writes outside the project.</li>
+      <li><strong>Risky changes:</strong> 🔑 a key written to a file your <code>.gitignore</code> doesn't exclude, or a new <code>.env</code> (<a href="/guides/claude-code-api-key-in-code">what to do then</a>), 🗑 deletions, 🗄 migrations, 📦 dependencies, 🚀 pushes and deploys, ⚠ writes outside the project.</li>
       <li><strong>Afterwards:</strong> <code>/turnslip:undo</code> takes the turn back. With Pro, <code>/turnslip:history</code> lists the recent turns of the project and <code>/turnslip:report</code> sums up the session.</li>
     </ul>
-    <p>Like git, turnslip never reads what your <code>.gitignore</code> excludes, and nothing it records leaves your machine.</p>
-    <p>Related: <a href="/guides/undo-claude-code-changes">How to undo Claude Code changes</a> · <a href="/#install">Install turnslip, free</a></p>
+    <p>Like git, turnslip never reads what your <code>.gitignore</code> excludes, and its free core works with "no account and no network" (<a href="https://github.com/ChuKhaLi/turnslip">README</a>). It works only if it was installed before the turn.</p>
+    <p>Related: <a href="/guides/undo-claude-code-changes">How to undo Claude Code changes</a> · <a href="/guides">All guides</a> · <a href="/#install">Install turnslip, free</a></p>
   </main>
 
   <footer class="site">

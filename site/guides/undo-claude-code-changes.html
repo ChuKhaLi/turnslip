@@ -18,17 +18,18 @@
   <meta property="og:url" content="https://turnslip.dev/guides/undo-claude-code-changes">
   <meta property="og:title" content="How to undo Claude Code changes">
   <meta property="og:description" content="What /rewind restores and misses, when git helps, and an undo that tracks shell commands too.">
-  <meta property="og:image" content="https://turnslip.dev/og.png">
+  <meta property="og:image" content="https://turnslip.dev/og/undo-claude-code-changes.png">
   <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://turnslip.dev/og/undo-claude-code-changes.png">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "TechArticle",
     "headline": "How to undo Claude Code changes",
-    "description": "What Claude Code's /rewind restores and misses, when git helps, and /turnslip:undo, which tracks shell changes too.",
+    "description": "Undo what Claude Code did to your files: what /rewind restores and misses (shell commands), when git helps, and /turnslip:undo, which tracks shell changes too.",
     "url": "https://turnslip.dev/guides/undo-claude-code-changes",
     "datePublished": "2026-10-05",
-    "dateModified": "2026-10-05",
+    "dateModified": "2026-10-07",
     "author": { "@type": "Person", "name": "ChuKhaLi", "url": "https://github.com/ChuKhaLi" },
     "about": { "@type": "SoftwareApplication", "name": "Claude Code" }
   }
@@ -39,7 +40,8 @@
     "@type": "BreadcrumbList",
     "itemListElement": [
       { "@type": "ListItem", "position": 1, "name": "turnslip", "item": "https://turnslip.dev/" },
-      { "@type": "ListItem", "position": 2, "name": "How to undo Claude Code changes", "item": "https://turnslip.dev/guides/undo-claude-code-changes" }
+      { "@type": "ListItem", "position": 2, "name": "Guides", "item": "https://turnslip.dev/guides" },
+      { "@type": "ListItem", "position": 3, "name": "How to undo Claude Code changes", "item": "https://turnslip.dev/guides/undo-claude-code-changes" }
     ]
   }
   </script>
@@ -59,38 +61,50 @@
 
   <main id="main" class="legal">
     <h1>How to undo Claude Code changes</h1>
-    <p class="fine">Last updated: 5 October 2026</p>
-    <p>Claude Code changed something you did not want: a file rewritten, a file deleted by <code>rm</code>, a dependency installed. There are three ways back, and each one restores different things. This page says what each one covers, so you can pick the right one before you need it.</p>
+    <p class="fine">Last updated: 7 October 2026</p>
+    <p>Claude Code changed something you did not want: a file rewritten, a file deleted by <code>rm</code>, a dependency installed. There are three ways back, and each one restores different things. This page says what each one covers, so you can pick the right one before you need it. If files are already gone, start with <a href="/guides/claude-code-deleted-my-files">Claude Code deleted my files</a>.</p>
 
     <h2>1. Claude Code's own rewind</h2>
-    <p>Claude Code keeps a checkpoint before each prompt that starts a turn. Run <code>/rewind</code>, or press <code>Esc</code> twice when the prompt input is empty, pick a message, then choose to restore the code, the conversation, or both.</p>
-    <p>What it covers, from <a href="https://code.claude.com/docs/en/checkpointing">Claude Code's checkpointing documentation</a>:</p>
+    <p>Claude Code keeps a checkpoint before each prompt that starts a turn. "Run <code>/rewind</code>, or press <code>Esc</code> twice when the prompt input is empty, to open the rewind menu", pick a message, then choose to restore the code, the conversation, or both (<a href="https://code.claude.com/docs/en/checkpointing">checkpointing</a>).</p>
     <ul>
-      <li>Edits made with Claude's file editing tools in the current session.</li>
-      <li>Snapshots for the 100 most recent checkpoints in a session; they are deleted about 30 days after the session last saved one.</li>
-      <li>Checkpoints are saved with the conversation, so <code>/rewind</code> still works after you resume a session.</li>
+      <li>It tracks "all changes made by its file editing tools" and keeps "file snapshots for the 100 most recent checkpoints in a session".</li>
+      <li>Checkpoints are saved with the conversation, "so you can still run <code>/rewind</code> after you resume a session"; the snapshots are deleted "by default about 30 days after the session last saved one".</li>
     </ul>
-    <p>What it does not cover, in the documentation's words: "Checkpointing does not track files modified by Bash commands." So a file Claude removed with <code>rm</code>, moved with <code>mv</code>, or changed through <code>npm install</code> or a script does not come back. Edits by most subagents, changes made outside Claude Code and symlinked files are not restored either. The documentation's own advice: checkpoints are "Not a replacement for version control."</p>
+    <p>What it does not cover, in the documentation's words: "Checkpointing does not track files modified by Bash commands." (<a href="https://code.claude.com/docs/en/checkpointing#bash-command-changes-not-tracked">checkpointing</a>). For subagents: "Any other subagent: rewinding doesn't restore the edits", apart from a skill forked in the foreground (<a href="https://code.claude.com/docs/en/checkpointing#subagent-edits-not-restored">subagent edits</a>). And "Checkpointing doesn't rewind symlinked or hard-linked files." Its own advice: checkpoints are "Not a replacement for version control".</p>
+    <p>A measured test on Claude Code 2.1.292 shows the line in practice: <code>/rewind</code> restored a Write edit and none of <code>rm</code>, <code>mv</code>, <code>sed -i</code> and <code>npm install</code> (<a href="/guides/what-rewind-misses">What /rewind misses</a>).</p>
 
     <h2>2. git</h2>
-    <p>If you committed before you asked Claude for something, git can take everything back: <code>git restore .</code> for changed files, <code>git clean</code> for new ones (look with <code>git clean -n</code> first). <code>git stash</code> keeps your own uncommitted work out of the way while you do it.</p>
+    <p>If you committed before you asked Claude for something, git can take the changed files back. Use <code>git restore --staged --worktree .</code> rather than plain <code>git restore .</code>: "By default, if --staged is given, the contents are restored from HEAD, otherwise from the index." (<a href="https://git-scm.com/docs/git-restore">git restore</a>), so a change Claude already staged is undone too. For new files, <code>git clean -n</code> lists what would go: "Don't actually remove anything, just show what would be done." (<a href="https://git-scm.com/docs/git-clean">git clean</a>).</p>
     <p>Its limits:</p>
     <ul>
       <li>It only knows what you committed. Work since the last commit, yours or Claude's, is not in it.</li>
-      <li>Plain <code>git stash</code> leaves out untracked files (<code>-u</code> adds them) and files your <code>.gitignore</code> excludes, such as <code>.env</code> (<code>-a</code> adds those).</li>
-      <li>Claude can run git too. A <code>git checkout -- .</code> or <code>git reset --hard</code> in a turn throws away uncommitted work, and git cannot give it back.</li>
+      <li><code>git stash</code> keeps your own uncommitted work out of the way, but plain <code>git stash</code> leaves out untracked files (<code>-u</code> adds them), and only <code>-a</code> takes the files your <code>.gitignore</code> excludes, such as <code>.env</code>: "All ignored and untracked files are also stashed and then cleaned up with git clean." (<a href="https://git-scm.com/docs/git-stash">git stash</a>).</li>
+      <li>Claude can run git too. A <code>git reset --hard</code> in a turn will "Overwrite all files and directories with the version from &lt;commit&gt;" (<a href="https://git-scm.com/docs/git-reset">git reset</a>), uncommitted work included.</li>
     </ul>
 
     <h2>3. turnslip</h2>
-    <p><a href="/">turnslip</a> is a Claude Code plugin. It snapshots the project at the start and at the end of every turn and compares the two, so a file changed by a shell command counts as much as one Claude edited. One line under each reply says what changed; <code>/turnslip:undo</code> takes the last turn back.</p>
+    <p><a href="/">turnslip</a> is a Claude Code plugin. It snapshots the project's files and compares them at the end of each turn (<a href="https://github.com/ChuKhaLi/turnslip/blob/main/plugin/README.md">its README</a>), so a file changed by a shell command counts as much as one Claude edited. One line under each reply says what changed; <code>/turnslip:undo</code> takes the last turn back. In a test on 7 October 2026 with Claude Code 2.1.292, one turn changed a file with <code>sed -i</code> and deleted another with <code>rm</code>, and the undo put both back:</p>
+    <figure class="demo">
+  <div class="term" role="img" aria-label="A Claude Code session: Claude changes the port in src/config.js with sed -i and deletes notes/old.txt with rm, the turnslip slip counts two files and one deletion, and /turnslip:undo restores both files."><span class="cc-prompt">❯ In src/config.js change the port from 3000 to 8080 with sed -i, then delete notes/old.txt with rm. Nothing
+  else.</span>
+<span class="cc-tool">●</span> <b>Bash</b>(… sed -i 's/PORT = 3000/PORT = 8080/'
+      src/config.js &amp;&amp; rm notes/old.txt &amp;&amp; cat src/config.js &amp;&amp; ls n…)
+<span class="cc-dim">  ⎿</span>  export const PORT = 8080
+
+<span class="slip">  ⎿  Stop says: turnslip · Changed the port in src/config.js from 3000 to 8080 with sed and deleted
+     notes/old.txt with rm · 2 files · 🗑 1 file deleted · /turnslip:undo</span>
+<span class="cc-prompt">❯ /turnslip:undo</span>
+<span class="cc-reply">●</span> turnslip · undid "Changed the port in src/config.js from 3000 to 8080 with sed and deleted notes/old.txt
+  with rm" (just now) · restored 2 files, removed 0</div>
+</figure>
     <ul>
-      <li>It restores every file the turn changed or deleted, and removes the files it created, including those a command like <code>rm</code>, <code>mv</code> or <code>npm install</code> touched.</li>
+      <li>It restores every file the turn changed or deleted, and removes the files it created. A file renamed with <code>mv</code> goes back under its old name since 0.3.8.</li>
       <li>It never overwrites a file you changed since the turn: that file is kept and named.</li>
       <li>The undo is a turn of its own, so it can be undone too. With Pro, <code>/turnslip:undo 3</code> takes back an earlier turn.</li>
     </ul>
     <p>Its limits, said plainly:</p>
     <ul>
-      <li>Paths your <code>.gitignore</code> excludes are never read, so they are never restored. A <code>.env</code> Claude deleted stays deleted.</li>
+      <li>Paths your <code>.gitignore</code> excludes are never read, so they are never restored. A <code>.env</code> Claude deleted stays deleted. <code>node_modules</code> is never tracked either: after <code>npm install</code>, undo restores <code>package.json</code> and removes a new lockfile, but the installed packages stay, and the line lists the install as not undone (<a href="/guides/what-rewind-misses">measured</a>).</li>
       <li>A write outside the project folder is flagged, not restored.</li>
       <li>A database migration, a <code>git push</code>, a deploy or a global install is listed as not undone; no file undo can take those back.</li>
       <li>On the first turns in a new or very large project, before its index is built, a turn can run in light mode: Claude's own edits stay undoable, but shell changes are not tracked yet, and the slip says so.</li>
@@ -98,8 +112,8 @@
     </ul>
 
     <h2>Which one to use</h2>
-    <p>Commit before a big request, whatever else you use. For a quick step back in the same session, <code>/rewind</code> also rewinds the conversation. When Claude runs commands, and you want to see what changed before you decide, turnslip covers the shell changes the other two can miss. They work side by side.</p>
-    <p>Related: <a href="/guides/what-did-claude-code-change">What did Claude Code just change?</a> · <a href="/#install">Install turnslip, free</a></p>
+    <p>Commit before a big request, whatever else you use. For a quick step back in the same session, <code>/rewind</code> also rewinds the conversation. When Claude runs commands, and you want to see what changed before you decide, turnslip covers the shell changes <code>/rewind</code> leaves out. They work side by side.</p>
+    <p>Related: <a href="/guides/what-did-claude-code-change">What did Claude Code just change?</a> · <a href="/guides/what-rewind-misses">What /rewind misses: a measured test</a> · <a href="/guides">All guides</a> · <a href="/#install">Install turnslip, free</a></p>
   </main>
 
   <footer class="site">

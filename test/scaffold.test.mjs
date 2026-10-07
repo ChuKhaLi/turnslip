@@ -5,11 +5,14 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { LIB, hookInput, makeProject, runHook, tempDir } from './helpers.mjs'
 
-// Every hook but MessageDisplay keeps the shell wrapper, so a machine without Node stays silent (spec §10).
-// MessageDisplay runs node in exec form, no shell (spike 2026-10-07-exec-form-hooks): the plugin directory's
-// validator blocked its old shell filter (`d=$(cat)`), and Claude Code shows nothing when an exec-form
-// MessageDisplay hook finds no node, so silence holds there too (owner, 2026-10-07).
-test('every hook stays silent when node is missing; MessageDisplay runs in exec form', () => {
+// Every hook but MessageDisplay is shell form ending in `; exit 0`, so a machine without Node stays silent:
+// stderr of a hook that exits 0 goes to the debug log only (hooks docs, "Exit code 0"). No `2>/dev/null`:
+// on Windows without Git Bash, Claude Code runs shell form with PowerShell, which fails that redirect before
+// node runs (spike 2026-10-07-hooks-powershell), and no `shell` field, so Claude Code picks Git Bash or
+// PowerShell itself. MessageDisplay runs node in exec form, no shell (spike 2026-10-07-exec-form-hooks): the
+// plugin directory's validator blocked its old shell filter (`d=$(cat)`), and Claude Code shows nothing
+// when an exec-form MessageDisplay hook finds no node, so silence holds there too (owner, 2026-10-07).
+test('every hook stays silent when node is missing, in bash and PowerShell; MessageDisplay runs in exec form', () => {
   const hooks = JSON.parse(readFileSync(join(LIB, '..', 'hooks', 'hooks.json'), 'utf8')).hooks
   for (const [event, entries] of Object.entries(hooks)) {
     for (const h of entries.flatMap((e) => e.hooks)) {
@@ -18,8 +21,10 @@ test('every hook stays silent when node is missing; MessageDisplay runs in exec 
         assert.deepEqual(h.args, ['${CLAUDE_PLUGIN_ROOT}/lib/display.mjs'], event)
       } else {
         assert.equal(h.args, undefined, event)
-        assert.equal(h.command, 'node "${CLAUDE_PLUGIN_ROOT}/lib/hook.mjs" 2>/dev/null; exit 0', event)
+        assert.equal(h.command, 'node "${CLAUDE_PLUGIN_ROOT}/lib/hook.mjs"; exit 0', event)
       }
+      assert.ok(!h.command.includes('/dev/null'), `${event}: /dev/null breaks the hook under PowerShell`)
+      assert.equal(h.shell, undefined, `${event}: a shell field would fail where that shell is missing`)
     }
   }
 })
