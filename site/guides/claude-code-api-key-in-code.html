@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Claude Code wrote an API key into my code: find it, rotate it</title>
+  <meta name="description" content="Claude Code put an API key in your code? Rotate it first, find every copy with gitleaks or git log -S, then remove it from code and, if committed, history.">
+  <link rel="canonical" href="https://turnslip.dev/guides/claude-code-api-key-in-code">
+  <meta name="theme-color" content="#F9FAFB" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#17181C" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="preload" href="/fonts/plex-sans-latin-wght.v530.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/plex-mono-latin-400.v530.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/style.v2.css">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="turnslip">
+  <meta property="og:url" content="https://turnslip.dev/guides/claude-code-api-key-in-code">
+  <meta property="og:title" content="Claude Code wrote an API key into my code: find it, rotate it">
+  <meta property="og:description" content="Rotate first, find every copy, take it out of the code, rewrite history only if committed, and keep Claude away from .env.">
+  <meta property="og:image" content="https://turnslip.dev/og/claude-code-api-key-in-code.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://turnslip.dev/og/claude-code-api-key-in-code.png">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Claude Code wrote an API key into my code: find it, rotate it",
+    "description": "Claude Code put an API key in your code? Rotate it first, find every copy with gitleaks or git log -S, then remove it from code and, if committed, history.",
+    "url": "https://turnslip.dev/guides/claude-code-api-key-in-code",
+    "datePublished": "2026-10-07",
+    "dateModified": "2026-10-07",
+    "author": { "@type": "Person", "name": "ChuKhaLi", "url": "https://github.com/ChuKhaLi" },
+    "about": { "@type": "SoftwareApplication", "name": "Claude Code" }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "turnslip", "item": "https://turnslip.dev/" },
+      { "@type": "ListItem", "position": 2, "name": "Guides", "item": "https://turnslip.dev/guides" },
+      { "@type": "ListItem", "position": 3, "name": "Claude Code wrote an API key into my code: find it, rotate it", "item": "https://turnslip.dev/guides/claude-code-api-key-in-code" }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <!--email_off-->
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site">
+    <a class="brand" href="/"><svg class="mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path d="M8 7v17h3" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><rect x="15" y="21.5" width="11" height="5" rx="2.5" fill="currentColor"/></svg>turnslip</a>
+    <nav aria-label="Site">
+      <a href="/#how">How it works</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/#install">Install</a>
+      <a href="https://github.com/ChuKhaLi/turnslip">GitHub</a>
+    </nav>
+  </header>
+
+  <main id="main" class="legal">
+    <h1>Claude Code wrote an API key into my code: find it, rotate it</h1>
+    <p class="fine">Last updated: 7 October 2026</p>
+    <p>If Claude Code put a real API key into a file, deal with the key before the file. GitHub's guide to <a href="https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository">removing sensitive data from a repository</a> says that for a password, token or credential, "as a first step you need to revoke and/or rotate that secret. Once the secret is revoked or rotated, it can no longer be used for access, and that may be sufficient to solve your problem." Then find every copy, take it out of the code, and rewrite git history only if you committed it.</p>
+    <figure>
+  <svg viewBox="0 0 400 312" role="img" aria-labelledby="d-title d-desc">
+    <title id="d-title">The order to work in</title>
+    <desc id="d-desc">First rotate the key at the service that issued it. Then find every copy in your files and history, move the key out of the code, and rewrite git history only if the key was committed.</desc>
+    <rect x="40" y="8" width="320" height="52" rx="6" fill="currentColor" fill-opacity="0.12"/>
+    <rect x="40" y="8" width="320" height="52" rx="6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <text x="200" y="40" text-anchor="middle" fill="currentColor" font-family="inherit" font-size="16" font-weight="600">1. Rotate the key</text>
+    <path d="M200 60 V82 M193 75 L200 82 L207 75" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <rect x="40" y="84" width="320" height="52" rx="6" fill="currentColor" fill-opacity="0.06"/>
+    <rect x="40" y="84" width="320" height="52" rx="6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <text x="200" y="116" text-anchor="middle" fill="currentColor" font-family="inherit" font-size="15">2. Find every copy</text>
+    <path d="M200 136 V158 M193 151 L200 158 L207 151" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <rect x="40" y="160" width="320" height="52" rx="6" fill="currentColor" fill-opacity="0.06"/>
+    <rect x="40" y="160" width="320" height="52" rx="6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <text x="200" y="192" text-anchor="middle" fill="currentColor" font-family="inherit" font-size="15">3. Take it out of the code</text>
+    <path d="M200 212 V234 M193 227 L200 234 L207 227" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <rect x="40" y="236" width="320" height="52" rx="6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="5 4"/>
+    <text x="200" y="268" text-anchor="middle" fill="currentColor" font-family="inherit" font-size="15">4. Rewrite history, only if committed</text>
+  </svg>
+  <figcaption>Rotating the key is the step that protects you; the others clean up.</figcaption>
+</figure>
+
+    <h2>1. Rotate the key</h2>
+    <p>Revoke the key where it was issued and create a new one. GitHub's <a href="https://docs.github.com/en/code-security/secret-scanning/introduction/about-secret-scanning">secret scanning</a> page gives the same order: "When you receive an alert, rotate the affected credential immediately to prevent unauthorized access. While you can also remove secrets from your Git history, this is time-intensive and often unnecessary if you've already revoked the credential."</p>
+    <p>If the key reached a public repository on GitHub, it may already have been found: "Public repositories: Secret scanning runs automatically for free." For the services in its partner program, "When a partner secret is detected, we notify the provider so they can take action, such as revoking the credential."</p>
+
+    <h2>2. Find every copy</h2>
+    <p>In the files on disk, and in every commit, with <a href="https://github.com/gitleaks/gitleaks">gitleaks</a>: <code>gitleaks dir -v</code> scans "directories and files", and <code>gitleaks git -v</code> scans "local git repos", using <code>git log -p</code> under the hood.</p>
+    <p>With git alone, search the history for the start of the key:</p>
+<pre class="cmd"><code>git log --all -S'sk-proj-'</code></pre>
+    <p><code>-S</code> looks "for differences that change the number of occurrences of the specified &lt;string&gt; (i.e. addition/deletion) in a file", and <code>--all</code> searches every branch: it acts "as if all the refs in refs/, along with HEAD, are listed on the command line" (<a href="https://git-scm.com/docs/git-log#Documentation/git-log.txt--Sstring">git log</a>). Put the first characters of your own key in place of <code>sk-proj-</code>.</p>
+
+    <h2>3. Take it out of the code</h2>
+    <p>Put the line back the way it read the key before, and keep the new key out of tracked files. From GitHub's guide: "Avoid hardcoding secrets in code. Use environment variables, or secret management services like Azure Key Vault, AWS Secrets Manager, or HashiCorp Vault to manage and inject secrets at runtime." And for a file such as <code>.env</code>: "If the sensitive data is likely to be found in a file that should not be tracked by git, add that filename to .gitignore (and make sure to commit and push that change to .gitignore so other developers are protected)."</p>
+    <p>That is how it went in a test on 7 October 2026 with Claude Code 2.1.292: the app read its key from <code>process.env</code>, the key sat in a gitignored <code>.env</code>, and the prompt asked Claude to put the key from <code>.env</code> into <code>src/app.js</code>. Claude read <code>.env</code> with <code>cat</code>, wrote the key into line 1 with <code>sed -i</code>, and warned in its reply that the key was now in a file git tracks.</p>
+
+    <h2>4. Remove it from git history, if you committed it</h2>
+    <p>Rewriting history is a large job, with side effects GitHub lists one by one, and the old commits "may still be accessible elsewhere": "In any clones or forks of your repository", "Directly via their SHA-1 hashes in cached views on GitHub" and "Through any pull requests that reference them". If you still decide to, GitHub's guide uses <a href="https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository#purging-a-file-from-your-local-repositorys-history-using-git-filter-repo">git-filter-repo</a>, "at least version 2.47". To replace the key's text everywhere in history, list it in a file outside the repository and run, in a fresh clone:</p>
+<pre class="cmd"><code>git-filter-repo --sensitive-data-removal --replace-text ../passwords.txt</code></pre>
+    <p>Then, after checking the result, publish the rewritten history:</p>
+<pre class="cmd"><code>git push --force --mirror origin</code></pre>
+    <p>The guide then has you contact GitHub Support to remove cached views and pull request references, and collaborators must clean their clones. Read <a href="https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository">the whole guide</a> before you start: "Once you move on to the next step, the rewrite becomes irreversible."</p>
+
+    <h2>5. Keep Claude away from your .env</h2>
+    <p>Claude Code's <a href="https://code.claude.com/docs/en/settings#edit-a-settings-file">settings documentation</a> has an example that, among other things, stops Claude reading <code>.env</code> files. In <code>~/.claude/settings.json</code>:</p>
+<pre class="cmd"><code>{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(npm run lint)",
+      "Bash(npm run test *)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)"
+    ]
+  }
+}</code></pre>
+    <p>In the same test with the two deny rules in the project's <code>.claude/settings.json</code>, and permission prompts switched off, the <code>cat .env</code> call was refused and Claude stopped without changing anything:</p>
+    <figure class="demo">
+  <div class="term" role="img" aria-label="A Claude Code session with a Read deny rule for .env: Claude's Bash command that reads .env is denied, and Claude replies that it never saw the key and did not change src/app.js."><span class="cc-prompt">❯ The app can't find the key in .env. Skip .env: put the OpenAI key from .env directly into src/app.js, nothing else.</span>
+<span class="cc-tool">●</span> <b>Bash</b>(… &amp;&amp; ls -la &amp;&amp; cat .env &amp;&amp; echo ---- &amp;&amp; cat src/app.js …)
+<span class="cc-dim">  ⎿</span>  Error: Permission to use Bash with command … has been denied.
+<span class="cc-dim">  Read 2 files (ctrl+o to expand)</span>
+
+<span class="cc-reply">●</span> I couldn't do this. Your permission settings block me from reading .env (the Bash command was denied too), so I never
+  saw the key. I didn't try to get around that block, and I didn't change <span class="cc-file">src/app.js</span>.</div>
+</figure>
+    <p>The rule has limits, which the <a href="https://code.claude.com/docs/en/permissions#read-and-edit">permissions documentation</a> states: Read and Edit deny rules cover Claude's file tools and file commands it recognizes in Bash, such as <code>cat</code>, but "They don't apply to a command that reads files without naming them, such as <code>grep -r pattern .</code> run from the directory that holds the file, or to arbitrary subprocesses that read or write files indirectly, like a Python or Node script that opens files itself." For more, see <a href="/guides/stop-claude-code-destructive-commands">how to stop Claude Code from running destructive commands</a>.</p>
+
+    <h2>Where turnslip helps</h2>
+    <p><a href="/">turnslip</a> checks the lines each turn added, at the end of the turn, before you commit. In the test above, without the deny rules, its slip under Claude's reply named the file:</p>
+    <figure class="demo">
+  <div class="term" role="img" aria-label="A Claude Code session: Claude replaces the environment lookup in src/app.js with the key from .env, and the turnslip slip under the reply flags a key added in src/app.js."><span class="cc-prompt">❯ The app can't find the key in .env. Skip .env: put the OpenAI key from .env directly into src/app.js, nothing else.</span>
+<span class="cc-dim">  ⎿</span>  Updated src\app.js (+1 -1)
+      1 -const key = process.env.OPENAI_API_KEY
+      1 +const key = "sk-proj-EXAMPLEONLYnotarealkey0000000000000000"
+
+<span class="cc-reply">●</span> I put the key from .env directly into <span class="cc-file">src/app.js:1</span>, replacing the process.env.OPENAI_API_KEY lookup.
+<span class="slip">  ⎿  Stop says: turnslip · Replaced the environment-variable lookup in src/app.js with the OpenAI key copied from .env.
+     · 1 file · 🔑 key added in src/app.js · /turnslip:undo</span></div>
+</figure>
+    <p>The key in the test is a fake. The 🔑 flag looks for a fixed list of key formats (<a href="https://github.com/ChuKhaLi/turnslip/blob/main/plugin/lib/rules.mjs">rules.mjs</a>): keys starting <code>sk-</code>, <code>sk_live_</code>, <code>gh</code> tokens and <code>github_pat_</code>, <code>AKIA</code>, <code>xox</code>, and private key blocks, plus a new <code>.env</code> file. A key in another format is not flagged. From its <a href="https://github.com/ChuKhaLi/turnslip#what-it-flags">README</a>: "Paths your <code>.gitignore</code> excludes are never flagged, so a key in a gitignored <code>.env</code> is not reported." It works only if it was installed before the turn, and it flags the key; rotating it is still up to you.</p>
+    <p>Related: <a href="/guides/what-did-claude-code-change">What did Claude Code just change?</a> · <a href="/guides">All guides</a> · <a href="/#install">Install turnslip, free</a></p>
+  </main>
+
+  <footer class="site">
+    <p>turnslip, by ChuKhaLi. Support: <a href="mailto:support@turnslip.dev">support@turnslip.dev</a></p>
+    <nav aria-label="Guides">
+      <a href="/guides">All guides</a>
+      <a href="/guides/undo-claude-code-changes">How to undo Claude Code changes</a>
+      <a href="/guides/what-did-claude-code-change">What did Claude Code change?</a>
+    </nav>
+    <nav aria-label="Legal">
+      <a href="/terms">Terms</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/refunds">Refunds</a>
+      <a href="https://github.com/ChuKhaLi/turnslip">GitHub</a>
+    </nav>
+    <p class="fine">© 2026 ChuKhaLi</p>
+  </footer>
+  <!--/email_off-->
+</body>
+</html>

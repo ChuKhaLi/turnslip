@@ -345,3 +345,43 @@ test('the what-rewind-misses page states each measured result, its method, and t
   assert.match(read('sitemap.xml'), /<loc>https:\/\/turnslip\.dev\/guides\/what-rewind-misses<\/loc><lastmod>2026-10-07<\/lastmod>/)
   assert.ok(read('llms.txt').includes('(https://turnslip.dev/guides/what-rewind-misses)'))
 })
+
+// Guide 4 (spec §3.3 page 4): rotate first, then find, take out, remove from history, prevent; turnslip's
+// key flag with its honest limit. Claude Code behaviour is captured in docs/spikes/2026-10-07-claude-code-api-key-in-code.md.
+const KEY = 'guides/claude-code-api-key-in-code.html'
+
+test('the API-key guide says rotate first, finds and removes the key, and states what each tool misses', () => {
+  const html = read(KEY)
+  assert.match(html, /<h1>Claude Code wrote an API key into my code: find it, rotate it<\/h1>/)
+  const h2 = [...html.matchAll(/<h2>([^<]+)<\/h2>/g)].map((m) => m[1])
+  assert.deepEqual(h2, ['1. Rotate the key', '2. Find every copy', '3. Take it out of the code',
+    '4. Remove it from git history, if you committed it', '5. Keep Claude away from your .env', 'Where turnslip helps'])
+  const first = text(html.slice(0, html.indexOf('<h2>')))
+  assert.ok(first.includes('as a first step you need to revoke and/or rotate that secret'), 'first screen lacks rotate-first')
+  const t = text(html)
+  for (const s of ['Once the secret is revoked or rotated, it can no longer be used for access, and that may be sufficient to solve your problem.',
+    "git log --all -S'sk-proj-'", 'for differences that change the number of occurrences of the specified <string> (i.e. addition/deletion) in a file',
+    'gitleaks git -v', 'gitleaks dir -v', 'Public repositories: Secret scanning runs automatically for free.',
+    'When a partner secret is detected, we notify the provider so they can take action, such as revoking the credential.',
+    'Avoid hardcoding secrets in code.', 'git-filter-repo --sensitive-data-removal --replace-text ../passwords.txt',
+    'git push --force --mirror origin', 'In any clones or forks of your repository',
+    "They don't apply to a command that reads files without naming them", '2.1.292', '🔑 key added in src/app.js',
+    'Paths your .gitignore excludes are never flagged, so a key in a gitignored .env is not reported.',
+    'installed before the turn', 'sk_live_', 'AKIA'])
+    assert.ok(t.includes(s), `API-key guide does not say "${s}"`)
+  const json = /<pre class="cmd"><code>(\{\s*"\$schema"[\s\S]*?)<\/code><\/pre>/.exec(html)?.[1]
+  assert.ok(json, 'no deny example')
+  assert.deepEqual(JSON.parse(json.replace(/&quot;/g, '"')).permissions.deny, ['Read(./.env)', 'Read(./.env.*)'])
+  for (const href of ['https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository',
+    'https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository#purging-a-file-from-your-local-repositorys-history-using-git-filter-repo',
+    'https://git-scm.com/docs/git-log#Documentation/git-log.txt--Sstring', 'https://github.com/gitleaks/gitleaks',
+    'https://docs.github.com/en/code-security/secret-scanning/introduction/about-secret-scanning',
+    'https://code.claude.com/docs/en/settings#edit-a-settings-file', 'https://code.claude.com/docs/en/permissions#read-and-edit',
+    'https://github.com/ChuKhaLi/turnslip#what-it-flags', '/guides/stop-claude-code-destructive-commands', '/#install'])
+    assert.ok(html.includes(`href="${href}"`), `API-key guide does not link ${href}`)
+  const article = ld(html).find((x) => x['@type'] === 'TechArticle')
+  assert.equal(article.headline, 'Claude Code wrote an API key into my code: find it, rotate it')
+  assert.equal(article.dateModified, '2026-10-07')
+  assert.match(read('sitemap.xml'), /<loc>https:\/\/turnslip\.dev\/guides\/claude-code-api-key-in-code<\/loc><lastmod>2026-10-07<\/lastmod>/)
+  assert.ok(read('llms.txt').includes('(https://turnslip.dev/guides/claude-code-api-key-in-code)'))
+})
