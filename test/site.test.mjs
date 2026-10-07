@@ -4,7 +4,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { contrast, PAGES, read, SITE, tokens } from './site-helpers.mjs'
 
-const CSS = 'style.v2.css'
+const CSS = 'style.v3.css'
 
 // [foreground, background, floor]. 4.5 for text, 3.0 for a boundary that carries meaning.
 const PAIRS = [
@@ -59,7 +59,7 @@ test('no green token', () => {
 })
 
 test('every @font-face file exists, is versioned, and the OFL licence ships with them', () => {
-  const css = read('style.v2.css')
+  const css = read('style.v3.css')
   const urls = [...css.matchAll(/url\("?(\/fonts\/[^")]+)"?\)/g)].map((m) => m[1])
   assert.equal(urls.length, 3)
   for (const u of urls) {
@@ -111,7 +111,7 @@ test('the drawn terminal ends with the slip, in the slip colour, and the callout
   const term = /<div class="term"[\s\S]*?<\/div>\s*<\/figure>/.exec(html)?.[0] ?? ''
   assert.match(term, /<span class="slip">\s*⎿ {2}Stop says: turnslip · [^<]+· \/turnslip:undo<\/span>/)
   assert.match(html, /<p class="callout"[^>]*>This line is turnslip\./)
-  assert.match(read('style.v2.css'), /\.slip\s*{[^}]*color:\s*var\(--cc-dim\)/)
+  assert.match(read('style.v3.css'), /\.slip\s*{[^}]*color:\s*var\(--cc-dim\)/)
 })
 
 // Spec §6: Claude Code no longer shows the receipt line (a MessageDisplay hook hides it), so a drawn
@@ -164,7 +164,8 @@ const CANON = { 'index.html': 'https://turnslip.dev/', 'guides.html': 'https://t
   'guides/claude-code-deleted-my-files.html': 'https://turnslip.dev/guides/claude-code-deleted-my-files',
   'guides/stop-claude-code-destructive-commands.html': 'https://turnslip.dev/guides/stop-claude-code-destructive-commands',
   'guides/what-rewind-misses.html': 'https://turnslip.dev/guides/what-rewind-misses',
-  'guides/claude-code-api-key-in-code.html': 'https://turnslip.dev/guides/claude-code-api-key-in-code', 'terms.html': 'https://turnslip.dev/terms',
+  'guides/claude-code-api-key-in-code.html': 'https://turnslip.dev/guides/claude-code-api-key-in-code',
+  'guides/review-claude-code-changes-before-commit.html': 'https://turnslip.dev/guides/review-claude-code-changes-before-commit', 'terms.html': 'https://turnslip.dev/terms',
   'privacy.html': 'https://turnslip.dev/privacy', 'refunds.html': 'https://turnslip.dev/refunds',
   'guides/undo-claude-code-changes.html': 'https://turnslip.dev/guides/undo-claude-code-changes',
   'guides/what-did-claude-code-change.html': 'https://turnslip.dev/guides/what-did-claude-code-change' }
@@ -213,7 +214,7 @@ test('nothing loads from another host and no script runs, but /thanks.js on /tha
     assert.doesNotMatch(html, /<link[^>]+rel="(stylesheet|preload|icon)"[^>]+href="https?:/, `${p}: external asset`)
     assert.doesNotMatch(html, /<img[^>]+src="https?:/, `${p}: external image`)
   }
-  assert.doesNotMatch(read('style.v2.css'), /@import|url\("?https?:/)
+  assert.doesNotMatch(read('style.v3.css'), /@import|url\("?https?:/)
 })
 
 test('the social image exists at 1200x630', () => {
@@ -237,7 +238,7 @@ test('_headers sets the security headers on every path', () => {
   const all = headerRules(read('_headers')).find((r) => r.path === '/*')
   assert.ok(all, 'no /* rule')
   for (const h of [
-    "Content-Security-Policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+    "Content-Security-Policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; media-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
     'Strict-Transport-Security: max-age=31536000; includeSubDomains',
     'X-Content-Type-Options: nosniff',
     'Referrer-Policy: strict-origin-when-cross-origin',

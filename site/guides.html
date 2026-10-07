@@ -12,7 +12,7 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="preload" href="/fonts/plex-sans-latin-wght.v530.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/fonts/plex-mono-latin-400.v530.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/style.v2.css">
+  <link rel="stylesheet" href="/style.v3.css">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="turnslip">
   <meta property="og:url" content="https://turnslip.dev/guides">
@@ -61,6 +61,7 @@
     <ul class="guides">
       <li><a href="/guides/claude-code-deleted-my-files">Claude Code deleted my files: what can still come back</a> git, /rewind, editor history, backups and recovery tools, in the order to try them.</li>
       <li><a href="/guides/stop-claude-code-destructive-commands">Stop Claude Code from running rm -rf and git reset --hard</a> Ask rules, a PreToolUse hook, what they miss, and a backstop.</li>
+      <li><a href="/guides/review-claude-code-changes-before-commit">Review what Claude Code changed before you commit</a> /diff, the files a shell command changed, git status and diff, and staging only what you read.</li>
       <li><a href="/guides/claude-code-api-key-in-code">Claude Code wrote an API key into my code: find it, rotate it</a> Rotate first, find every copy, take it out of the code and history, and keep Claude away from .env.</li>
       <li><a href="/guides/what-rewind-misses">What /rewind misses: a measured test</a> rm, mv, sed -i, npm install and a Write edit, each followed by /rewind and by /turnslip:undo.</li>
       <li><a href="/guides/what-did-claude-code-change">What did Claude Code just change?</a> Tool calls, git, and a per-turn record that includes shell commands.</li>

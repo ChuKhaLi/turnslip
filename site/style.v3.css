@@ -217,6 +217,7 @@ footer.site { display: grid; gap: 12px; padding-block: 32px 48px; border-top: 1p
 }
 
 main.legal { display: grid; gap: 16px; max-width: calc(68ch + 64px); padding-block: 32px 96px; }
+main.legal video { display: block; width: 100%; height: auto; border-radius: 8px; }
 main.legal h2 { margin-top: 24px; font-size: 1.25rem; line-height: 1.35; }
 
 body.og { width: 1200px; height: 630px; overflow: hidden; display: grid; align-content: center; gap: 40px; padding: 72px; margin: 0; }

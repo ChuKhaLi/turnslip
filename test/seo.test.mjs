@@ -63,7 +63,7 @@ test('each guide has an article and a breadcrumb, links the other guide and the 
     const data = ld(html)
     const article = data.find((x) => x['@type'] === 'TechArticle')
     assert.ok(article && article.headline === /<h1>([^<]+)<\/h1>/.exec(html)[1].replace(/&amp;/g, '&'), `${p}: TechArticle headline is the h1`)
-    assert.equal(article.dateModified, '2026-10-07')
+    assert.equal(article.dateModified, '2026-10-08')
     assert.equal(article.datePublished, '2026-10-05')
     const crumbs = data.find((x) => x['@type'] === 'BreadcrumbList')
     assert.equal(crumbs?.itemListElement.at(-1).item, `https://turnslip.dev/${p.replace('.html', '')}`)
@@ -75,8 +75,8 @@ test('each guide has an article and a breadcrumb, links the other guide and the 
 test('the sitemap dates the home page and the guides by their last change', () => {
   const s = read('sitemap.xml')
   assert.match(s, /<loc>https:\/\/turnslip\.dev\/<\/loc><lastmod>2026-10-07<\/lastmod>/)
-  for (const g of ['undo-claude-code-changes', 'what-did-claude-code-change']) {
-    assert.match(s, new RegExp(`<loc>https://turnslip\\.dev/guides/${g}</loc><lastmod>2026-10-07</lastmod>`))
+  for (const [g, d] of [['undo-claude-code-changes', '2026-10-08'], ['what-did-claude-code-change', '2026-10-08']]) {
+    assert.match(s, new RegExp(`<loc>https://turnslip\\.dev/guides/${g}</loc><lastmod>${d}</lastmod>`))
   }
 })
 
@@ -421,4 +421,65 @@ test('the what-changed guide says which changes no tool line names, from today\'
     '/guides/claude-code-api-key-in-code'])
     assert.ok(html.includes(`href="${href}"`), `what-changed guide does not link ${href}`)
   assert.equal((mainOf(html).match(/<figure class="demo">/g) ?? []).length, 1)
+})
+
+// The demo video (2026-10-08): a real WezTerm recording on the undo guide, next to its text transcript (the
+// captured terminal). No JavaScript; muted, inline, nothing downloaded until played; the stylesheet keeps it
+// inside the column; the CSP allows media from the site only. Recording: docs/spikes/2026-10-08-undo-demo-video.md.
+test('the undo guide carries the demo video, sized to the column, with a caption that dates it', () => {
+  const html = read(UNDO)
+  const video = /<video\b[^>]*>[\s\S]*?<\/video>/.exec(html)?.[0]
+  assert.ok(video, 'no video on the undo guide')
+  for (const a of ['controls', 'muted', 'playsinline', 'preload="none"', 'poster="/media/undo-demo-poster.webp"', 'aria-label="'])
+    assert.ok(video.includes(a), `video lacks ${a}`)
+  assert.match(video, /<source src="\/media\/undo-demo\.mp4" type="video\/mp4">/)
+  for (const f of ['media/undo-demo.mp4', 'media/undo-demo-poster.webp']) {
+    const size = readFileSync(join(SITE, f)).length
+    assert.ok(size > 1000 && size < 1_000_000, `${f}: ${size} bytes`)
+  }
+  const caption = text(/<video[\s\S]*?<figcaption>([\s\S]*?)<\/figcaption>/.exec(html)?.[1] ?? '')
+  for (const s of ['2.1.293', '8 October 2026', '0.3.9', 'sped up']) assert.ok(caption.includes(s), `caption lacks "${s}"`)
+  assert.match(read('style.v3.css'), /main\.legal video\s*{[^}]*width:\s*100%[^}]*height:\s*auto/)
+})
+
+// Guide 5 (spec §3.3 page 5, written 2026-10-08 ahead of the §3.4 pace by the owner's choice): Claude Code's
+// own /diff first, then the Bash changed-files view and its documented limits, git status and diff, staging
+// on purpose, and turnslip's per-turn record. Captures: docs/spikes/2026-10-08-review-before-commit.md (WezTerm).
+const REVIEW = 'guides/review-claude-code-changes-before-commit.html'
+
+test('the review-before-commit guide puts /diff and git first and states what each one leaves out', () => {
+  const html = read(REVIEW)
+  assert.match(html, /<h1>Review what Claude Code changed before you commit<\/h1>/)
+  const h2 = [...html.matchAll(/<h2>([^<]+)<\/h2>/g)].map((m) => m[1])
+  assert.deepEqual(h2, ['1. In Claude Code: /diff', '2. The files a shell command changed', '3. In git: status, then diff',
+    '4. Stage what you read', 'Where turnslip helps'])
+  const t = text(html)
+  for (const s of ['You see the edits Claude has made so far alongside anything else you haven\'t committed.',
+    'so a change Claude makes through a shell command appears only under Current', 'the list skips test files and generated files',
+    'Uncommitted changes (git diff HEAD)', '3 files changed +3 -3',
+    'records which files changed in a Git repository while a Bash command runs', "A listed file isn't always one the command changed.",
+    'Updated BUILD_INFO.txt (+1 -1)', 'paths in the working tree that are not tracked by Git (and are not ignored by gitignore',
+    'Show ignored files as well.', 'git diff --cached',
+    "This is the exact diff that git commit will produce as long as you don't use the -a flag.",
+    'Use git add --interactive to individually review and stage changes within each file.',
+    'not mentioned:', '/turnslip:report', 'installed before the turn', '2.1.293'])
+    assert.ok(t.includes(s), `review guide does not say "${s}"`)
+  for (const href of ['https://code.claude.com/docs/en/interactive-mode#review-changes-with-%2Fdiff',
+    'https://code.claude.com/docs/en/settings-reference#basheditdiffenabled', 'https://git-scm.com/docs/git-status',
+    'https://git-scm.com/docs/git-diff', 'https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository#avoiding-accidental-commits-in-the-future',
+    '/guides/what-did-claude-code-change', '/guides/claude-code-api-key-in-code', '/#install'])
+    assert.ok(html.includes(`href="${href}"`), `review guide does not link ${href}`)
+  assert.equal((mainOf(html).match(/<figure class="demo">/g) ?? []).length, 2)
+  const article = ld(html).find((x) => x['@type'] === 'TechArticle')
+  assert.equal(article.headline, 'Review what Claude Code changed before you commit')
+  assert.equal(article.dateModified, '2026-10-08')
+  assert.match(read('sitemap.xml'), /<loc>https:\/\/turnslip\.dev\/guides\/review-claude-code-changes-before-commit<\/loc><lastmod>2026-10-08<\/lastmod>/)
+  assert.ok(read('llms.txt').includes('(https://turnslip.dev/guides/review-claude-code-changes-before-commit)'))
+})
+
+test('the what-changed guide says Claude Code lists a Bash command\'s changed files in a git repository', () => {
+  const html = read(CHANGED), t = text(html)
+  assert.ok(t.includes('records which files changed in a Git repository while a Bash command runs'))
+  assert.ok(html.includes('href="https://code.claude.com/docs/en/settings-reference#basheditdiffenabled"'))
+  assert.ok(t.includes('The test project above was not a git repository'),'the capture\'s setting is not stated')
 })

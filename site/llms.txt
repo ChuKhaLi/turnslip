@@ -38,6 +38,7 @@ Run `/turnslip:setup` in Claude Code to check. It works in Claude Code in the te
 - [Guides](https://turnslip.dev/guides): every guide on one page
 - [Claude Code deleted my files: what can still come back](https://turnslip.dev/guides/claude-code-deleted-my-files): git, /rewind, editor history, backups, recovery tools, and turnslip if it was installed before
 - [Stop Claude Code from running rm -rf and git reset --hard](https://turnslip.dev/guides/stop-claude-code-destructive-commands): ask rules, a PreToolUse hook, what they cannot catch, and turnslip as a backstop
+- [Review what Claude Code changed before you commit](https://turnslip.dev/guides/review-claude-code-changes-before-commit): /diff, the files a shell command changed (bashEditDiffEnabled), git status and diff, staging on purpose
 - [Claude Code wrote an API key into my code: find it, rotate it](https://turnslip.dev/guides/claude-code-api-key-in-code): rotate first, find copies with gitleaks or git log -S, remove from code and history, and a Read deny rule for .env
 - [What /rewind misses: a measured test](https://turnslip.dev/guides/what-rewind-misses): rm, mv, sed -i, npm install and a Write edit on Claude Code 2.1.292, what /rewind and /turnslip:undo each restored, with the method
 - [How to undo Claude Code changes](https://turnslip.dev/guides/undo-claude-code-changes): what /rewind restores and misses, when git helps, and /turnslip:undo

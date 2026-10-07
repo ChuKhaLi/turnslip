@@ -12,7 +12,7 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="preload" href="/fonts/plex-sans-latin-wght.v530.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/fonts/plex-mono-latin-400.v530.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/style.v2.css">
+  <link rel="stylesheet" href="/style.v3.css">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="turnslip">
   <meta property="og:url" content="https://turnslip.dev/guides/what-did-claude-code-change">
@@ -29,7 +29,7 @@
     "description": "Find out which files Claude Code created, changed or deleted in a turn, shell commands included, and where its summary left something out.",
     "url": "https://turnslip.dev/guides/what-did-claude-code-change",
     "datePublished": "2026-10-05",
-    "dateModified": "2026-10-07",
+    "dateModified": "2026-10-08",
     "author": { "@type": "Person", "name": "ChuKhaLi", "url": "https://github.com/ChuKhaLi" },
     "about": { "@type": "SoftwareApplication", "name": "Claude Code" }
   }
@@ -61,7 +61,7 @@
 
   <main id="main" class="legal">
     <h1>What did Claude Code just change?</h1>
-    <p class="fine">Last updated: 7 October 2026</p>
+    <p class="fine">Last updated: 8 October 2026</p>
     <p>At the end of a turn Claude Code tells you what it did. That reply is a summary, written by the model. The files on disk are the record, and the two do not always match: a file the reply never mentions, a key written into a config file, a deletion inside a shell command. Here are the ways to see what really changed.</p>
 
     <h2>Read the tool calls</h2>
@@ -81,6 +81,7 @@
      isn't a number · 3 files · 📦 packages changed · /turnslip:undo</span></div>
 </figure>
     <p>A shell call is not always drawn as Bash either: in another test that day, Claude Code drew a <code>sed -i</code> call as <code>Update(src\config.js)</code>, the way it draws a file edit, and on Windows it ran <code>npm install</code> through its PowerShell tool, <code>PowerShell(npm install is-number)</code> (<a href="/guides/what-rewind-misses">What /rewind misses</a>). The tool lines say what Claude ran; they are not a list of changed files.</p>
+    <p>The test project above was not a git repository. In one, Claude Code can list under a Bash call the files that changed while it ran: the <a href="https://code.claude.com/docs/en/settings-reference#basheditdiffenabled"><code>bashEditDiffEnabled</code></a> setting "records which files changed in a Git repository while a Bash command runs", by default in auto mode and <code>bypassPermissions</code> mode. What it leaves out: <a href="/guides/review-claude-code-changes-before-commit">Review what Claude Code changed before you commit</a>.</p>
 
     <h2>Ask git</h2>
     <p><code>git status</code> lists, among others, "paths in the working tree that are not tracked by Git (and are not ignored by gitignore[5])" (<a href="https://git-scm.com/docs/git-status">git status</a>), and <code>git diff HEAD</code> shows the changes to tracked files since your last commit: "Typically you would want comparison with the latest commit, so if you do not give &lt;commit&gt;, it defaults to HEAD." (<a href="https://git-scm.com/docs/git-diff">git diff</a>). It sees what Claude's tools and its shell commands did alike. Its limits: it compares with your last commit, so several turns and your own edits run together; it leaves out files your <code>.gitignore</code> excludes, such as a new key in <code>.env</code>; and it shows nothing in a folder that is not a git repository.</p>

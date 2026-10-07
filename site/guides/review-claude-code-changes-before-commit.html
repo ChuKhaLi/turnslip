@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Review what Claude Code changed before you commit: /diff, git and turnslip</title>
+  <meta name="description" content="Before you commit Claude Code's work: /diff, the files a shell command changed, git status and git diff, and staging only what you read.">
+  <link rel="canonical" href="https://turnslip.dev/guides/review-claude-code-changes-before-commit">
+  <meta name="theme-color" content="#F9FAFB" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#17181C" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="preload" href="/fonts/plex-sans-latin-wght.v530.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/plex-mono-latin-400.v530.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/style.v3.css">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="turnslip">
+  <meta property="og:url" content="https://turnslip.dev/guides/review-claude-code-changes-before-commit">
+  <meta property="og:title" content="Review what Claude Code changed before you commit">
+  <meta property="og:description" content="Claude Code's /diff, its list of files a shell command changed, git status and diff, and what each one leaves out.">
+  <meta property="og:image" content="https://turnslip.dev/og/review-claude-code-changes-before-commit.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://turnslip.dev/og/review-claude-code-changes-before-commit.png">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Review what Claude Code changed before you commit",
+    "description": "Before you commit Claude Code's work: /diff, the files a shell command changed, git status and git diff, and staging only what you read.",
+    "url": "https://turnslip.dev/guides/review-claude-code-changes-before-commit",
+    "datePublished": "2026-10-08",
+    "dateModified": "2026-10-08",
+    "author": { "@type": "Person", "name": "ChuKhaLi", "url": "https://github.com/ChuKhaLi" },
+    "about": { "@type": "SoftwareApplication", "name": "Claude Code" }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "turnslip", "item": "https://turnslip.dev/" },
+      { "@type": "ListItem", "position": 2, "name": "Guides", "item": "https://turnslip.dev/guides" },
+      { "@type": "ListItem", "position": 3, "name": "Review what Claude Code changed before you commit", "item": "https://turnslip.dev/guides/review-claude-code-changes-before-commit" }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <!--email_off-->
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site">
+    <a class="brand" href="/"><svg class="mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path d="M8 7v17h3" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><rect x="15" y="21.5" width="11" height="5" rx="2.5" fill="currentColor"/></svg>turnslip</a>
+    <nav aria-label="Site">
+      <a href="/#how">How it works</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/#install">Install</a>
+      <a href="https://github.com/ChuKhaLi/turnslip">GitHub</a>
+    </nav>
+  </header>
+
+  <main id="main" class="legal">
+    <h1>Review what Claude Code changed before you commit</h1>
+    <p class="fine">Last updated: 8 October 2026</p>
+    <p>Before you commit what Claude Code did, check three things: which files changed, what changed in them, and that you stage only what you read. Claude's reply at the end of a turn is a summary written by the model, not that list (<a href="/guides/what-did-claude-code-change">what did Claude Code just change?</a>). Claude Code and git each give you the list; this page says what each view leaves out.</p>
+
+    <h2>1. In Claude Code: /diff</h2>
+    <p>Run <code>/diff</code>. From the <a href="https://code.claude.com/docs/en/interactive-mode#review-changes-with-%2Fdiff">interactive mode documentation</a>: "You see the edits Claude has made so far alongside anything else you haven't committed." In a test on 8 October 2026 with Claude Code 2.1.293, after a turn that edited one file and ran a build, the dialog listed all three changed files:</p>
+    <figure class="demo">
+  <div class="term" role="img" aria-label="The Claude Code /diff dialog, titled Uncommitted changes (git diff HEAD): three files changed, BUILD_INFO.txt, dist/app.js and src/app.js, each one line added and one removed."><span class="cc-dim">╭───────────────────────────────────────</span>
+<span class="cc-dim">│</span> Uncommitted changes (git diff HEAD)
+<span class="cc-dim">│</span>
+<span class="cc-dim">│</span> 3 files changed +3 -3
+<span class="cc-dim">│</span>
+<span class="cc-dim">│</span> ❯ BUILD_INFO.txt                                   +1 -1
+<span class="cc-dim">│</span>   dist/app.js                                      +1 -1
+<span class="cc-dim">│</span>   src/app.js                                       +1 -1
+<span class="cc-dim">│</span>
+<span class="cc-dim">│</span> ↑/↓ to select · Enter to view · Esc to close
+<span class="cc-dim">╰───────────────────────────────────────</span></div>
+</figure>
+    <p>What to know about it, from the same page: the views of a single turn "come from Claude's file edits rather than from git, so a change Claude makes through a shell command appears only under <code>Current</code>, the working-tree view". The side panel needs a git repository, and "the list skips test files and generated files" until you expand them. After that, "<code>/code-review</code> checks the current diff for correctness bugs" (<a href="https://code.claude.com/docs/en/commands">commands</a>).</p>
+
+    <h2>2. The files a shell command changed</h2>
+    <p>Claude Code can also show, under a Bash call, the files that changed while it ran. The <a href="https://code.claude.com/docs/en/settings-reference#basheditdiffenabled"><code>bashEditDiffEnabled</code></a> setting "records which files changed in a Git repository while a Bash command runs", and by default does so "in auto mode and <code>bypassPermissions</code> mode when it directs Claude to edit files through Bash". In the test above, <code>npm run build</code> rewrote two files Claude never opened, and the Bash call showed them:</p>
+    <figure class="demo">
+  <div class="term" role="img" aria-label="A Claude Code session: one Bash call changes the greeting with sed and runs npm run build; under it Claude Code lists BUILD_INFO.txt, dist/app.js and src/app.js as updated, notes that the list is a convenience view, and the turnslip slip counts three files."><span class="cc-prompt">❯ In src/app.js change the greeting from 'Hello' to 'Hi', then run npm run build. Nothing else.</span>
+<span class="cc-tool">●</span> <b>Bash</b>(sed -i "s/'Hello'/'Hi'/" src/app.js &amp;&amp; cat src/app.js &amp;&amp; npm run build; git status --short)
+<span class="cc-dim">  ⎿</span>  Updated BUILD_INFO.txt (+1 -1)
+<span class="cc-dim">  ⎿</span>  Updated dist\app.js (+1 -1)
+<span class="cc-dim">  ⎿</span>  Updated src\app.js (+1 -1)
+<span class="cc-dim">  ⎿  (files that changed while this command ran, by the command or by another process; a convenience
+     view, not a review or audit of the command)</span>
+<span class="slip">  ⎿  Stop says: turnslip · Changed the greeting in src/app.js from 'Hello' to 'Hi' and ran npm run build,
+     which also rewrote dist/app.js and BUILD_ · 3 files · /turnslip:undo</span></div>
+</figure>
+    <p>Its limits, from the setting's entry: "A listed file isn't always one the command changed. A change that another program or another Bash call made while the command ran can appear there too." It records only in a Git repository, and outside the two modes above only if you turn it on in your user settings.</p>
+
+    <h2>3. In git: status, then diff</h2>
+    <p><code>git status</code> shows, among others, "paths in the working tree that are not tracked by Git (and are not ignored by gitignore[5])" (<a href="https://git-scm.com/docs/git-status">git status</a>). A file your <code>.gitignore</code> excludes, such as a new <code>.env</code>, is not in that list; <code>git status --ignored</code> adds it: "Show ignored files as well." New files Claude created are among those untracked paths. Then read the changes: plain <code>git diff</code> is "to view the changes you made relative to the index (staging area for the next commit)", and <code>git diff --cached</code>, which shows "the changes you staged for the next commit relative to the named &lt;commit&gt;" (<a href="https://git-scm.com/docs/git-diff">git diff</a>).</p>
+
+    <h2>4. Stage what you read</h2>
+    <p>GitHub's advice on <a href="https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository#avoiding-accidental-commits-in-the-future">avoiding accidental commits</a> fits work an agent did:</p>
+    <ul>
+      <li>"Avoid the catch-all commands git add . and git commit -a on the command line—use git add filename and git rm filename to individually stage files, instead."</li>
+      <li>"Use git add --interactive to individually review and stage changes within each file."</li>
+      <li>"Use git diff --cached to review the changes that you have staged for commit. This is the exact diff that git commit will produce as long as you don't use the -a flag."</li>
+    </ul>
+    <p>If the diff holds a key, stop and rotate it first: <a href="/guides/claude-code-api-key-in-code">Claude Code wrote an API key into my code</a>.</p>
+
+    <h2>Where turnslip helps</h2>
+    <p><a href="/">turnslip</a> keeps a record per turn: the slip under each reply, as in the test above, counts the files the turn changed, shell commands included, also in a folder that is not a git repository. When Claude's receipt of the files it changed leaves one out, the slip says <code>not mentioned:</code> and names it. In this test Claude did mention the two build files, so there was none. With Pro, <code>/turnslip:report</code> gives a report of this session. It works only if it was installed before the turn, and like git it never reads what your <code>.gitignore</code> excludes.</p>
+    <p>Related: <a href="/guides/what-did-claude-code-change">What did Claude Code just change?</a> · <a href="/guides">All guides</a> · <a href="/#install">Install turnslip, free</a></p>
+  </main>
+
+  <footer class="site">
+    <p>turnslip, by ChuKhaLi. Support: <a href="mailto:support@turnslip.dev">support@turnslip.dev</a></p>
+    <nav aria-label="Guides">
+      <a href="/guides">All guides</a>
+      <a href="/guides/undo-claude-code-changes">How to undo Claude Code changes</a>
+      <a href="/guides/what-did-claude-code-change">What did Claude Code change?</a>
+    </nav>
+    <nav aria-label="Legal">
+      <a href="/terms">Terms</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/refunds">Refunds</a>
+      <a href="https://github.com/ChuKhaLi/turnslip">GitHub</a>
+    </nav>
+    <p class="fine">© 2026 ChuKhaLi</p>
+  </footer>
+  <!--/email_off-->
+</body>
+</html>

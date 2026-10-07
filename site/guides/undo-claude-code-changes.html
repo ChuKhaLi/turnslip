@@ -12,7 +12,7 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="preload" href="/fonts/plex-sans-latin-wght.v530.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/fonts/plex-mono-latin-400.v530.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/style.v2.css">
+  <link rel="stylesheet" href="/style.v3.css">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="turnslip">
   <meta property="og:url" content="https://turnslip.dev/guides/undo-claude-code-changes">
@@ -29,7 +29,7 @@
     "description": "Undo what Claude Code did to your files: what /rewind restores and misses (shell commands), when git helps, and /turnslip:undo, which tracks shell changes too.",
     "url": "https://turnslip.dev/guides/undo-claude-code-changes",
     "datePublished": "2026-10-05",
-    "dateModified": "2026-10-07",
+    "dateModified": "2026-10-08",
     "author": { "@type": "Person", "name": "ChuKhaLi", "url": "https://github.com/ChuKhaLi" },
     "about": { "@type": "SoftwareApplication", "name": "Claude Code" }
   }
@@ -61,7 +61,7 @@
 
   <main id="main" class="legal">
     <h1>How to undo Claude Code changes</h1>
-    <p class="fine">Last updated: 7 October 2026</p>
+    <p class="fine">Last updated: 8 October 2026</p>
     <p>Claude Code changed something you did not want: a file rewritten, a file deleted by <code>rm</code>, a dependency installed. There are three ways back, and each one restores different things. This page says what each one covers, so you can pick the right one before you need it. If files are already gone, start with <a href="/guides/claude-code-deleted-my-files">Claude Code deleted my files</a>.</p>
 
     <h2>1. Claude Code's own rewind</h2>
@@ -96,6 +96,12 @@
 <span class="cc-prompt">❯ /turnslip:undo</span>
 <span class="cc-reply">●</span> turnslip · undid "Changed the port in src/config.js from 3000 to 8080 with sed and deleted notes/old.txt
   with rm" (just now) · restored 2 files, removed 0</div>
+</figure>
+    <figure>
+  <video controls muted playsinline preload="none" width="1200" height="684" poster="/media/undo-demo-poster.webp" aria-label="A recording of a Claude Code session: the prompt is typed, Claude changes the port with sed -i and deletes notes/old.txt with rm, the turnslip slip counts two files and one deletion, /turnslip:undo restores both, and ls and cat show the file back and the port at 3000.">
+    <source src="/media/undo-demo.mp4" type="video/mp4">
+  </video>
+  <figcaption>The same prompt in a real terminal (WezTerm), recorded 8 October 2026 with Claude Code 2.1.293 and turnslip 0.3.9; the wait while Claude works is sped up 2.5 times. No sound.</figcaption>
 </figure>
     <ul>
       <li>It restores every file the turn changed or deleted, and removes the files it created. A file renamed with <code>mv</code> goes back under its old name since 0.3.8.</li>
