@@ -488,10 +488,12 @@ test('the what-changed guide says Claude Code lists a Bash command\'s changed fi
 // the public README and llms.txt answer "why turnslip" with what the setting documents and what turnslip adds,
 // without claiming to be more precise (owner, 2026-10-08; NEXT §4).
 test('the FAQ, the public README and llms.txt say what Claude Code now shows and what turnslip adds', async () => {
-  const { readFileSync } = await import('node:fs')
+  const { existsSync, readFileSync } = await import('node:fs')
   const faq = /<section class="faq"[\s\S]*?<\/section>/.exec(read('index.html'))[0]
   assert.match(faq, /<h3>Claude Code now shows the files a shell command changed\. Why turnslip\?<\/h3>/)
-  const readme = readFileSync(join(SITE, '..', 'scripts', 'mirror', 'README.md'), 'utf8').replace(/\s+/g, ' ')
+  // The public README is scripts/mirror/README.md here and README.md in the mirror, where scripts/ is withheld.
+  const src = join(SITE, '..', 'scripts', 'mirror', 'README.md')
+  const readme = readFileSync(existsSync(src) ? src : join(SITE, '..', 'README.md'), 'utf8').replace(/\s+/g, ' ')
   for (const [name, t] of [['FAQ', text(faq)], ['README', readme], ['llms.txt', read('llms.txt').replace(/\s+/g, ' ')]]) {
     for (const s of ['in a Git repository', 'auto', "isn't always one the command changed", 'outside git', '/rewind'])
       assert.ok(t.includes(s), `${name} does not say "${s}"`)
