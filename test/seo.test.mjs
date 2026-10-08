@@ -74,7 +74,7 @@ test('each guide has an article and a breadcrumb, links the other guide and the 
 
 test('the sitemap dates the home page and the guides by their last change', () => {
   const s = read('sitemap.xml')
-  assert.match(s, /<loc>https:\/\/turnslip\.dev\/<\/loc><lastmod>2026-10-07<\/lastmod>/)
+  assert.match(s, /<loc>https:\/\/turnslip\.dev\/<\/loc><lastmod>2026-10-08<\/lastmod>/)
   for (const [g, d] of [['undo-claude-code-changes', '2026-10-08'], ['what-did-claude-code-change', '2026-10-08']]) {
     assert.match(s, new RegExp(`<loc>https://turnslip\\.dev/guides/${g}</loc><lastmod>${d}</lastmod>`))
   }
@@ -482,4 +482,21 @@ test('the what-changed guide says Claude Code lists a Bash command\'s changed fi
   assert.ok(t.includes('records which files changed in a Git repository while a Bash command runs'))
   assert.ok(html.includes('href="https://code.claude.com/docs/en/settings-reference#basheditdiffenabled"'))
   assert.ok(t.includes('The test project above was not a git repository'),'the capture\'s setting is not stated')
+})
+
+// Claude Code lists the files a Bash command changed (bashEditDiffEnabled, captured on 2.1.293): the home FAQ,
+// the public README and llms.txt answer "why turnslip" with what the setting documents and what turnslip adds,
+// without claiming to be more precise (owner, 2026-10-08; NEXT §4).
+test('the FAQ, the public README and llms.txt say what Claude Code now shows and what turnslip adds', async () => {
+  const { readFileSync } = await import('node:fs')
+  const faq = /<section class="faq"[\s\S]*?<\/section>/.exec(read('index.html'))[0]
+  assert.match(faq, /<h3>Claude Code now shows the files a shell command changed\. Why turnslip\?<\/h3>/)
+  const readme = readFileSync(join(SITE, '..', 'scripts', 'mirror', 'README.md'), 'utf8').replace(/\s+/g, ' ')
+  for (const [name, t] of [['FAQ', text(faq)], ['README', readme], ['llms.txt', read('llms.txt').replace(/\s+/g, ' ')]]) {
+    for (const s of ['in a Git repository', 'auto', "isn't always one the command changed", 'outside git', '/rewind'])
+      assert.ok(t.includes(s), `${name} does not say "${s}"`)
+  }
+  assert.ok(faq.includes('href="https://code.claude.com/docs/en/settings-reference#basheditdiffenabled"'))
+  assert.ok(faq.includes('href="/guides/review-claude-code-changes-before-commit"'))
+  assert.ok(readme.includes('https://code.claude.com/docs/en/settings-reference#basheditdiffenabled'))
 })

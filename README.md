@@ -11,6 +11,12 @@ not track files modified by Bash commands": a file removed by `rm`, or changed b
 script, does not come back. turnslip snapshots the project before and after each turn, so those count
 too. It works beside `/rewind` and git, not instead of them.
 
+Claude Code can also list the files that changed while a Bash command ran, in a Git repository and by
+default in auto and bypass modes; its documentation adds that "A listed file isn't always one the command
+changed" (https://code.claude.com/docs/en/settings-reference#basheditdiffenabled). turnslip keeps one record
+per turn, outside git too, flags the risky parts, checks them against what Claude said, and undoes shell
+changes, which `/rewind` does not.
+
 The core is free, with no account and no network. An optional one-time Pro adds history, undo of an
 earlier turn and a session report: see https://turnslip.dev.
 

@@ -153,6 +153,8 @@
       <p>On <a href="https://github.com/ChuKhaLi/turnslip">GitHub</a>, under FSL-1.1-MIT: read it, change it, use it; each version becomes MIT after two years.</p>
       <h3>How is this different from Claude Code's /rewind?</h3>
       <p><code>/rewind</code> restores the edits Claude made with its file tools; it does not track files changed by shell commands. turnslip snapshots the project before and after each turn, so a file a command deleted or rewrote comes back too. They work side by side. <a href="/guides/undo-claude-code-changes">How to undo Claude Code changes</a></p>
+      <h3>Claude Code now shows the files a shell command changed. Why turnslip?</h3>
+      <p>Claude Code lists the files that changed while a Bash command ran, in a Git repository and by default in auto and bypass modes; its <a href="https://code.claude.com/docs/en/settings-reference#basheditdiffenabled">documentation</a> adds that "A listed file isn't always one the command changed." turnslip keeps one record per turn, outside git too, flags the risky parts, checks them against what Claude said, and <code>/turnslip:undo</code> puts shell changes back, which <code>/rewind</code> does not. They work side by side. <a href="/guides/review-claude-code-changes-before-commit">Review what Claude Code changed before you commit</a></p>
       <h3>Which tools does it work with?</h3>
       <p>Claude Code, in the terminal and in VS Code.</p>
       <h3 id="support">How do I get help?</h3>
